@@ -54,6 +54,20 @@ export const adapterProofCases: AdapterProofCase[] = [
     },
   },
   {
+    name: 'rigid YouTube gateway allows bounded public read',
+    adapterId: 'youtube.public-media.read',
+    expectedGate: 'ALLOW',
+    request: {
+      requestId: 'proof:youtube-gateway-read',
+      adapterId: 'youtube.public-media.read',
+      capabilityId: 'youtube.channel.uploads.read',
+      operations: ['read'],
+      consent: 'not-required',
+      revoked: false,
+      requestedAt: '2026-08-11T00:00:00.000Z',
+    },
+  },
+  {
     name: 'revocation ledger overrides previous first-party eligibility',
     adapterId: 'kopano.asset.read',
     expectedGate: 'BLOCK',
