@@ -28,7 +28,7 @@ public sealed class YoutubeGatewayClient(
         {
             return new YoutubeGatewayResponse(
                 cachedFeed,
-                Receipt(requestId, "ALLOW", "cache-hit", ["Public read capability executed through the rigid gateway.", "Response served from bounded in-memory cache."]),
+                Receipt(requestId, "ALLOW", "executed", ["Public read capability executed through the rigid gateway.", "Response served from bounded in-memory cache (cache-hit)."]),
                 "dotnet-gateway",
                 "YouTube Data API v3");
         }
@@ -151,7 +151,7 @@ public sealed class YoutubeGatewayClient(
             requestId,
             AdapterId,
             CapabilityId,
-            "read",
+            ["read"],
             gate,
             outcome,
             DateTimeOffset.UtcNow,
