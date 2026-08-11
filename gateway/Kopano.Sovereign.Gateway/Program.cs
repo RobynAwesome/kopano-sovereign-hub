@@ -40,15 +40,22 @@ app.MapGet("/health", (IConfiguration configuration) => Results.Ok(new
 
 app.MapGet("/api/youtube/uploads", async (
     int? limit,
+    string? requestId,
     HttpContext context,
     YoutubeGatewayClient gateway,
     CancellationToken cancellationToken) =>
 {
     var boundedLimit = Math.Clamp(limit ?? 6, 1, 12);
+    var headerRequestId = context.Request.Headers["X-Kopano-Request-Id"].FirstOrDefault();
+    var effectiveRequestId = !string.IsNullOrWhiteSpace(requestId)
+        ? requestId.Trim()
+        : !string.IsNullOrWhiteSpace(headerRequestId)
+            ? headerRequestId.Trim()
+            : context.TraceIdentifier;
 
     try
     {
-        var result = await gateway.GetUploadsAsync(boundedLimit, context.TraceIdentifier, cancellationToken);
+        var result = await gateway.GetUploadsAsync(boundedLimit, effectiveRequestId, cancellationToken);
         return Results.Ok(result);
     }
     catch (YoutubeGatewayConfigurationException exception)
@@ -61,7 +68,7 @@ app.MapGet("/api/youtube/uploads", async (
             {
                 ["gate"] = "BLOCK",
                 ["adapterId"] = "youtube.public-media.read",
-                ["requestId"] = context.TraceIdentifier,
+                ["requestId"] = effectiveRequestId,
             });
     }
     catch (YoutubeGatewayNotFoundException exception)
@@ -74,7 +81,7 @@ app.MapGet("/api/youtube/uploads", async (
             {
                 ["gate"] = "BLOCK",
                 ["adapterId"] = "youtube.public-media.read",
-                ["requestId"] = context.TraceIdentifier,
+                ["requestId"] = effectiveRequestId,
             });
     }
     catch (YoutubeGatewayUpstreamException exception)
@@ -87,7 +94,7 @@ app.MapGet("/api/youtube/uploads", async (
             {
                 ["gate"] = "REVIEW",
                 ["adapterId"] = "youtube.public-media.read",
-                ["requestId"] = context.TraceIdentifier,
+                ["requestId"] = effectiveRequestId,
             });
     }
 })
