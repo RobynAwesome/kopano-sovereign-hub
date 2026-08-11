@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react';
+import { evaluateAdapterProofCases } from './adapters/proof';
 import { integrationCandidates, sovereignSurfaces, type SovereignSurface } from './data/registry';
 import { evaluateSurface, readRuntimeSignals } from './lib/kc';
 
@@ -25,8 +26,15 @@ export default function App() {
   const [selected, setSelected] = useState<SovereignSurface | null>(sovereignSurfaces[0]);
   const [lane, setLane] = useState<'ecosystem' | 'integrations'>('ecosystem');
   const signals = useMemo(() => readRuntimeSignals(), []);
+  const adapterProof = useMemo(() => evaluateAdapterProofCases(), []);
   const cards = lane === 'ecosystem' ? sovereignSurfaces : integrationCandidates;
   const selectedDecision = selected ? evaluateSurface(selected) : null;
+  const proofPassed = adapterProof.filter((proofCase) => proofCase.passed).length;
+
+  function openLane(nextLane: 'ecosystem' | 'integrations') {
+    setLane(nextLane);
+    setSelected(nextLane === 'ecosystem' ? sovereignSurfaces[0] : integrationCandidates[0]);
+  }
 
   return (
     <main className="app-shell">
@@ -47,29 +55,30 @@ export default function App() {
           <span className="hero__tag">KC governs. Users choose. Adapters execute.</span>
           <h2>One sovereign shell for stories, games, music, services and trusted external tools.</h2>
           <p>
-            PR1 proves the membrane: first-party products live inside one adaptive launcher while external platforms remain behind explicit trust gates.
+            PR1 proved the shell. Sprint 01 now proves that every capability can declare its scope, consent and trust boundary before KC allows execution.
           </p>
           <div className="hero__actions">
-            <button className="primary" onClick={() => setLane('ecosystem')}>Open ecosystem</button>
-            <button className="secondary" onClick={() => setLane('integrations')}>Inspect integrations</button>
+            <button className="primary" onClick={() => openLane('ecosystem')}>Open ecosystem</button>
+            <button className="secondary" onClick={() => openLane('integrations')}>Inspect integrations</button>
           </div>
         </div>
         <div className="hero__telemetry">
           <div><span>TypeScript</span><strong>7.0</strong></div>
           <div><span>WebGL2</span><strong>{signals.webgl2 ? 'READY' : 'FALLBACK'}</strong></div>
           <div><span>Service Worker</span><strong>{signals.serviceWorker ? 'READY' : 'NO'}</strong></div>
-          <div><span>Install Mode</span><strong>{signals.standalone ? 'APP' : 'BROWSER'}</strong></div>
+          <div><span>Adapter Proof</span><strong>{proofPassed}/{adapterProof.length} PASS</strong></div>
         </div>
       </section>
 
       <section className="workspace">
         <aside className="dock">
           <span className="dock__label">Sovereign Dock</span>
-          <button className={lane === 'ecosystem' ? 'active' : ''} onClick={() => setLane('ecosystem')}>◎ Products</button>
-          <button className={lane === 'integrations' ? 'active' : ''} onClick={() => setLane('integrations')}>⌘ Integrations</button>
+          <button className={lane === 'ecosystem' ? 'active' : ''} onClick={() => openLane('ecosystem')}>◎ Products</button>
+          <button className={lane === 'integrations' ? 'active' : ''} onClick={() => openLane('integrations')}>⌘ Integrations</button>
           <div className="dock__rule" />
           <span className="dock__small">Chromium-class web runtime</span>
-          <span className="dock__small">.NET gateway: PR2+</span>
+          <span className="dock__small">Universal adapter: PR2</span>
+          <span className="dock__small">.NET gateway: PR3</span>
         </aside>
 
         <div className="catalogue">
@@ -85,6 +94,29 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      {lane === 'integrations' && (
+        <section className="proof-panel">
+          <div className="proof-panel__header">
+            <div>
+              <span className="eyebrow">Sprint 01 / Universal Sovereign Adapter</span>
+              <h2>Governance transport proof matrix</h2>
+            </div>
+            <strong>{proofPassed}/{adapterProof.length} PASS</strong>
+          </div>
+          <div className="proof-grid">
+            {adapterProof.map((proofCase) => (
+              <article className="proof-case" key={proofCase.name}>
+                <span className={proofCase.passed ? 'proof-status proof-status--pass' : 'proof-status proof-status--fail'}>
+                  {proofCase.passed ? 'PASS' : 'FAIL'}
+                </span>
+                <h3>{proofCase.name}</h3>
+                <p>Expected {proofCase.expectedGate} · Actual {proofCase.actualGate}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {selected && selectedDecision && (
         <section className="kc-panel">
@@ -104,7 +136,7 @@ export default function App() {
       )}
 
       <footer>
-        <span>Kopano Sovereign Hub · PR1 proof</span>
+        <span>Kopano Sovereign Hub · Sprint 01 / PR2</span>
         <span>Reality &gt; presentation · POC &gt; FOC</span>
       </footer>
     </main>
