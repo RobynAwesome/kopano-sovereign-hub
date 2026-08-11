@@ -40,6 +40,7 @@ PR3 explicitly does not implement publishing, commenting, liking, subscriptions,
 - no key is committed to the repository;
 - no key is returned to the APWA;
 - outbound HttpClient informational logging is suppressed for the YouTube client;
+- upstream error bodies are not reflected to callers;
 - no OAuth token is required because this proof reads public channel data only.
 
 ## Quota boundary
@@ -77,7 +78,7 @@ Returns normalized public upload metadata plus a KC-compatible gateway receipt.
 - [x] KC receipt shape exists.
 - [x] APWA adapter catalogue declares the gateway.
 - [x] KC allows bounded external read through declared gateway while keeping unproven external reads under REVIEW.
-- [ ] TypeScript + .NET CI passes.
+- [x] TypeScript + .NET CI passes — GitHub Actions run `31533391153`.
 - [ ] live upstream proof with a real restricted `YOUTUBE_API_KEY`.
 - [ ] gateway deployment receipt.
 
