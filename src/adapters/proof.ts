@@ -1,17 +1,18 @@
 import { sovereignAdapters } from './catalog';
 import type { AdapterGate, AdapterRequest } from './contract';
-import { evaluateAdapterRequest } from './governance';
+import { executeBoundedMock, revokeCapability, type RevocationLedger } from './runtime';
 
 export type AdapterProofCase = {
   name: string;
   adapterId: string;
   request: AdapterRequest;
   expectedGate: AdapterGate;
+  revokeBefore?: boolean;
 };
 
 export const adapterProofCases: AdapterProofCase[] = [
   {
-    name: 'first-party read capability is allowed',
+    name: 'first-party read capability is allowed and executes',
     adapterId: 'kopano.asset.read',
     expectedGate: 'ALLOW',
     request: {
@@ -53,16 +54,17 @@ export const adapterProofCases: AdapterProofCase[] = [
     },
   },
   {
-    name: 'revocation overrides previous eligibility',
+    name: 'revocation ledger overrides previous first-party eligibility',
     adapterId: 'kopano.asset.read',
     expectedGate: 'BLOCK',
+    revokeBefore: true,
     request: {
       requestId: 'proof:revoked',
       adapterId: 'kopano.asset.read',
       capabilityId: 'asset.read',
       operations: ['read'],
       consent: 'not-required',
-      revoked: true,
+      revoked: false,
       requestedAt: '2026-08-11T00:00:00.000Z',
     },
   },
@@ -72,15 +74,41 @@ export function evaluateAdapterProofCases() {
   return adapterProofCases.map((proofCase) => {
     const adapter = sovereignAdapters.find((candidate) => candidate.id === proofCase.adapterId);
     if (!adapter) {
-      return { ...proofCase, actualGate: 'BLOCK' as const, passed: false, error: 'Adapter declaration missing.' };
+      return {
+        ...proofCase,
+        actualGate: 'BLOCK' as const,
+        outcome: 'blocked' as const,
+        receiptId: 'missing-adapter',
+        passed: false,
+        error: 'Adapter declaration missing.',
+      };
     }
 
-    const decision = evaluateAdapterRequest(adapter, proofCase.request);
+    let ledger: RevocationLedger = [];
+    if (proofCase.revokeBefore) {
+      ledger = revokeCapability(
+        ledger,
+        proofCase.request.adapterId,
+        proofCase.request.capabilityId,
+        'Sprint 01 revocation proof.',
+        '2026-08-11T00:00:01.000Z',
+      );
+    }
+
+    const result = executeBoundedMock(
+      adapter,
+      proofCase.request,
+      ledger,
+      '2026-08-11T00:00:02.000Z',
+    );
+
     return {
       ...proofCase,
-      actualGate: decision.gate,
-      passed: decision.gate === proofCase.expectedGate,
-      reasons: decision.reasons,
+      actualGate: result.decision.gate,
+      outcome: result.receipt.outcome,
+      receiptId: result.receipt.receiptId,
+      passed: result.decision.gate === proofCase.expectedGate,
+      reasons: result.decision.reasons,
     };
   });
 }
