@@ -1,0 +1,10 @@
+{
+  "name": "Kopano Sovereign Hub",
+  "short_name": "Kopano Hub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050b13",
+  "theme_color": "#07111f",
+  "description": "Governed adaptive distribution surface for the Kopano-Phu ecosystem.",
+  "icons": []
+}
