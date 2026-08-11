@@ -39,4 +39,20 @@ export const sovereignAdapters: SovereignAdapter[] = [
       },
     ],
   },
+  {
+    id: 'youtube.public-media.read',
+    name: 'YouTube Public Media Gateway',
+    provider: 'YouTube Data API v3',
+    trust: 'external',
+    transport: 'gateway',
+    version: '0.1.0',
+    capabilities: [
+      {
+        id: 'youtube.channel.uploads.read',
+        description: 'Read and normalize public uploads from the configured Kopano Labs YouTube channel through the .NET rigid gateway.',
+        operations: ['read'],
+        requiresConsent: false,
+      },
+    ],
+  },
 ];
