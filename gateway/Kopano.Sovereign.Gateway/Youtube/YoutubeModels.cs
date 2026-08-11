@@ -23,7 +23,7 @@ public sealed record KcGatewayReceipt(
     string RequestId,
     string AdapterId,
     string CapabilityId,
-    string Operation,
+    IReadOnlyList<string> Operations,
     string Gate,
     string Outcome,
     DateTimeOffset EmittedAt,
