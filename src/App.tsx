@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { integrationCandidates, sovereignSurfaces, type SovereignSurface } from './data/registry';
 import { evaluateSurface, readRuntimeSignals } from './lib/kc';
 
@@ -6,7 +6,7 @@ function SurfaceCard({ surface, onInspect }: { surface: SovereignSurface; onInsp
   const decision = evaluateSurface(surface);
 
   return (
-    <button className="surface-card" onClick={() => onInspect(surface)} style={{ '--accent': surface.accent } as React.CSSProperties}>
+    <button className="surface-card" onClick={() => onInspect(surface)} style={{ '--accent': surface.accent } as CSSProperties}>
       <div className="surface-card__topline">
         <span className="surface-card__kind">{surface.kind}</span>
         <span className={`gate gate--${decision.gate.toLowerCase()}`}>{decision.gate}</span>
@@ -93,7 +93,7 @@ export default function App() {
             <h2>{selected.name}</h2>
             <p>{selected.description}</p>
           </div>
-          <div className="score-ring" style={{ '--score': `${selectedDecision.score * 3.6}deg` } as React.CSSProperties}>
+          <div className="score-ring" style={{ '--score': `${selectedDecision.score * 3.6}deg` } as CSSProperties}>
             <strong>{selectedDecision.score}</strong>
             <span>{selectedDecision.gate}</span>
           </div>
