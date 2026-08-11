@@ -54,7 +54,7 @@ public sealed class YoutubeGatewayClient(
     {
         var url = $"channels?part=snippet%2CcontentDetails&forHandle={Uri.EscapeDataString(handle)}&fields=items(id%2Csnippet(title)%2CcontentDetails%2FrelatedPlaylists%2Fuploads)&key={Uri.EscapeDataString(apiKey)}";
         using var response = await client.GetAsync(url, cancellationToken);
-        await EnsureYoutubeSuccess(response, cancellationToken);
+        EnsureYoutubeSuccess(response);
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
@@ -88,7 +88,7 @@ public sealed class YoutubeGatewayClient(
     {
         var url = $"playlistItems?part=snippet%2CcontentDetails&playlistId={Uri.EscapeDataString(channel.UploadsPlaylistId)}&maxResults={limit}&fields=nextPageToken%2Citems(contentDetails%2FvideoId%2Csnippet(title%2Cdescription%2CpublishedAt%2Cthumbnails%2Fhigh))&key={Uri.EscapeDataString(apiKey)}";
         using var response = await client.GetAsync(url, cancellationToken);
-        await EnsureYoutubeSuccess(response, cancellationToken);
+        EnsureYoutubeSuccess(response);
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
@@ -135,16 +135,14 @@ public sealed class YoutubeGatewayClient(
         return new YoutubeChannelFeed(channel.ChannelId, handle, channel.Title, channel.UploadsPlaylistId, uploads, nextPageToken);
     }
 
-    private static async Task EnsureYoutubeSuccess(HttpResponseMessage response, CancellationToken cancellationToken)
+    private static void EnsureYoutubeSuccess(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
         {
             return;
         }
 
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        var compact = body.Length > 300 ? body[..300] : body;
-        throw new YoutubeGatewayUpstreamException($"YouTube upstream returned HTTP {(int)response.StatusCode}. {compact}");
+        throw new YoutubeGatewayUpstreamException($"YouTube upstream returned HTTP {(int)response.StatusCode}.");
     }
 
     private static KcGatewayReceipt Receipt(string requestId, string gate, string outcome, IReadOnlyList<string> reasons) =>
