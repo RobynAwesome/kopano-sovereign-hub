@@ -9,6 +9,11 @@ import {
 
 export function evaluateAdapterRequest(adapter: SovereignAdapter, request: AdapterRequest): AdapterDecision {
   const reasons: string[] = [];
+
+  if (request.adapterId !== adapter.id) {
+    return { gate: 'BLOCK', reasons: ['Request adapter identity does not match the declared adapter.'] };
+  }
+
   const capability = capabilityFor(adapter, request.capabilityId);
 
   if (!capability) {
