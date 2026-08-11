@@ -35,16 +35,12 @@ export function evaluateAdapterRequest(adapter: SovereignAdapter, request: Adapt
 
   const mutatesState = request.operations.some((operation) => operation === 'write' || operation === 'execute');
 
-  if (adapter.trust === 'external') {
-    reasons.push('External trust boundary requires a proven gateway or equivalent governed transport.');
-  }
-
   if (mutatesState) {
     reasons.push('Write/execute operations require stronger transport and receipt validation than read-only access.');
   }
 
   if (adapter.transport === 'mock') {
-    reasons.push('Mock transport is valid for PR2 contract proof only.');
+    reasons.push('Mock transport remains valid only for bounded contract proof.');
   }
 
   if (adapter.trust === 'first-party' && !mutatesState) {
@@ -52,7 +48,18 @@ export function evaluateAdapterRequest(adapter: SovereignAdapter, request: Adapt
     return { gate: 'ALLOW', reasons };
   }
 
-  if (adapter.trust === 'external' || mutatesState) {
+  if (adapter.trust === 'external') {
+    if (adapter.transport === 'gateway' && !mutatesState) {
+      reasons.push('External read capability is isolated behind a declared rigid gateway.');
+      reasons.push('Gateway transport is read-only and returns a KC-compatible execution receipt.');
+      return { gate: 'ALLOW', reasons };
+    }
+
+    reasons.push('External trust boundary requires a proven gateway or equivalent governed transport.');
+    return { gate: 'REVIEW', reasons };
+  }
+
+  if (mutatesState) {
     return { gate: 'REVIEW', reasons };
   }
 
