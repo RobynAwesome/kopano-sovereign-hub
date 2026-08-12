@@ -1,0 +1,247 @@
+import type { SovereignAsset } from './contract';
+
+export const sovereignAssetRegistry: SovereignAsset[] = [
+  {
+    id: 'kopano.brand.primary-mark.v1',
+    title: 'Kopano Labs primary brand mark',
+    namespace: 'kopano-labs.brand',
+    role: 'candidate',
+    approval: 'candidate',
+    classification: 'confirmed',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Kopano Labs',
+      organization: 'Kopano Labs',
+      ownershipBasis: 'user-declared',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'b113f26d72ce77f915b49bf5ab6528205409e16323e39c7b070ba3820416e6ff',
+    },
+    media: {
+      mediaType: 'image/jpeg',
+      width: 1536,
+      height: 1536,
+      byteLength: 127434,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1000153842.png',
+    },
+    allowedSurfaces: ['hub-header', 'hub-splash', 'open-graph', 'governance-receipt'],
+    notes: [
+      'First canonical brand candidate selected from user-supplied evidence.',
+      'Evidence file has a .png filename but JPEG binary encoding; canonical ingest must normalize extension/content-type without changing provenance.',
+      'Not yet production-distributable because the binary has not been ingested into governed storage.',
+    ],
+  },
+  {
+    id: 'hub.evidence.mobile-shell.pr1',
+    title: 'Kopano Sovereign Hub PR1 mobile baseline',
+    namespace: 'kopano-sovereign-hub.product-evidence',
+    role: 'reference',
+    approval: 'reference-only',
+    classification: 'confirmed',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Kopano Sovereign Hub',
+      organization: 'Kopano Labs',
+      ownershipBasis: 'user-declared',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: '8057ca4b0d29f23800127ee246f21a948c62a2cdd53442b978cd334de4e4a263',
+    },
+    media: {
+      mediaType: 'image/jpeg',
+      width: 674,
+      height: 1536,
+      byteLength: 161505,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:Screenshot_2026-08-11-17-27-06-072_com.microsoft.emmx.jpg',
+    },
+    allowedSurfaces: [],
+    notes: [
+      'Baseline evidence for PR5 consumer-shell redesign.',
+      'Reference evidence is never treated as a production artwork asset.',
+    ],
+  },
+  {
+    id: 'reference.game-discovery.msn.01',
+    title: 'Simple game discovery over deep workstation reference',
+    namespace: 'design-evidence.third-party',
+    role: 'reference',
+    approval: 'reference-only',
+    classification: 'confirmed',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Third-party interaction reference',
+      organization: 'Unclassified',
+      ownershipBasis: 'third-party-reference',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'ed5252c722984e6eb540ed0df1a8b4a1a6ae82f11abd5ff8511da102f68893fd',
+    },
+    media: {
+      mediaType: 'image/jpeg',
+      width: 864,
+      height: 1536,
+      byteLength: 277829,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1000153772.jpg',
+    },
+    allowedSurfaces: [],
+    notes: ['Interaction principle only: deep machinery underneath; simple action above. Do not redistribute or copy third-party UI.'],
+  },
+  {
+    id: 'reference.game-discovery.msn.02',
+    title: 'Game category navigation reference',
+    namespace: 'design-evidence.third-party',
+    role: 'reference',
+    approval: 'reference-only',
+    classification: 'confirmed',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Third-party interaction reference',
+      organization: 'Unclassified',
+      ownershipBasis: 'third-party-reference',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'be8e58fa6456c325bee8049f402dbd37d277022c6516eea8d8d237f1365fc660',
+    },
+    media: {
+      mediaType: 'image/jpeg',
+      width: 864,
+      height: 1536,
+      byteLength: 208007,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1000153780.jpg',
+    },
+    allowedSurfaces: [],
+    notes: ['Reference-only evidence for PR5/PR8 information architecture.'],
+  },
+  {
+    id: 'reference.deep-workstation.wolfram.01',
+    title: 'Deep computation workstation reference',
+    namespace: 'design-evidence.third-party',
+    role: 'reference',
+    approval: 'reference-only',
+    classification: 'confirmed',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Third-party interaction reference',
+      organization: 'Unclassified',
+      ownershipBasis: 'third-party-reference',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'f718f68208574e092d8a813fa63ae00bc88ff804ed043ac534a92ed8f7f998c7',
+    },
+    media: {
+      mediaType: 'image/jpeg',
+      width: 1536,
+      height: 676,
+      byteLength: 170800,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1000153782.jpg',
+    },
+    allowedSurfaces: [],
+    notes: ['Reference-only evidence establishing that complex computation can remain behind a simple consumer surface.'],
+  },
+  {
+    id: 'jennifer.evidence.companion-matrix.01',
+    title: 'Project: JENNIFER companion matrix evidence 01',
+    namespace: 'project-jennifer',
+    role: 'candidate',
+    approval: 'candidate',
+    classification: 'provisional',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Project: JENNIFER asset candidate',
+      organization: 'AMA-PHU Entertainment',
+      ownershipBasis: 'pending-confirmation',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'fece81fd26185b6d8ecddbace9ea4f0360425546d184fbd4ce430e2bae0290af',
+    },
+    media: {
+      mediaType: 'image/png',
+      width: 1408,
+      height: 768,
+      byteLength: 1358656,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1785966335054.png',
+    },
+    allowedSurfaces: ['play', 'create'],
+    notes: ['Provisional namespace assignment. Requires ownership/role confirmation before approval or ingest.'],
+  },
+  {
+    id: 'jennifer.evidence.companion-matrix.02',
+    title: 'Project: JENNIFER companion matrix evidence 02',
+    namespace: 'project-jennifer',
+    role: 'candidate',
+    approval: 'candidate',
+    classification: 'provisional',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Project: JENNIFER asset candidate',
+      organization: 'AMA-PHU Entertainment',
+      ownershipBasis: 'pending-confirmation',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: 'd11243151300124abfc418c99c08aab64ac5c5f6a4ffbd7bb6e0107a301f07e9',
+    },
+    media: {
+      mediaType: 'image/png',
+      width: 1408,
+      height: 768,
+      byteLength: 1585880,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1785966441671(1).png',
+    },
+    allowedSurfaces: ['play', 'create'],
+    notes: ['Provisional namespace assignment. Requires ownership/role confirmation before approval or ingest.'],
+  },
+  {
+    id: 'jennifer.evidence.companion-matrix.03',
+    title: 'Project: JENNIFER companion matrix evidence 03',
+    namespace: 'project-jennifer',
+    role: 'candidate',
+    approval: 'candidate',
+    classification: 'provisional',
+    availability: 'evidence-only',
+    owner: {
+      name: 'Project: JENNIFER asset candidate',
+      organization: 'AMA-PHU Entertainment',
+      ownershipBasis: 'pending-confirmation',
+    },
+    fingerprint: {
+      algorithm: 'sha256',
+      value: '8be5f2d5f0c073ce5a9633965e4a067e53f36ba28097a2c83f1abe949716a5fb',
+    },
+    media: {
+      mediaType: 'image/png',
+      width: 1408,
+      height: 768,
+      byteLength: 1626808,
+    },
+    lineage: {
+      sourceReference: 'chat-evidence:1785966533656.png',
+    },
+    allowedSurfaces: ['play', 'create'],
+    notes: ['Provisional namespace assignment. Requires ownership/role confirmation before approval or ingest.'],
+  },
+];
+
+export function assetById(assetId: string) {
+  return sovereignAssetRegistry.find((asset) => asset.id === assetId);
+}
