@@ -5,12 +5,19 @@ using Microsoft.AspNetCore.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.AddFilter("System.Net.Http.HttpClient.YouTube", LogLevel.Warning);
+builder.Logging.AddFilter("System.Net.Http.HttpClient.YouTubePublic", LogLevel.Warning);
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("YouTube", client =>
 {
     client.BaseAddress = new Uri("https://www.googleapis.com/youtube/v3/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.1");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.2");
+});
+builder.Services.AddHttpClient("YouTubePublic", client =>
+{
+    client.BaseAddress = new Uri("https://www.youtube.com/");
+    client.Timeout = TimeSpan.FromSeconds(12);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.2");
 });
 builder.Services.AddSingleton<YoutubeGatewayClient>();
 
@@ -29,14 +36,20 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 app.UseRateLimiter();
 
-app.MapGet("/health", (IConfiguration configuration) => Results.Ok(new
+app.MapGet("/health", (IConfiguration configuration) =>
 {
-    status = "ok",
-    service = "Kopano Sovereign Gateway",
-    runtime = ".NET 10",
-    adapter = "youtube.public-media.read",
-    configured = !string.IsNullOrWhiteSpace(configuration["YOUTUBE_API_KEY"]),
-}));
+    var hasApiKey = !string.IsNullOrWhiteSpace(configuration["YOUTUBE_API_KEY"]);
+    return Results.Ok(new
+    {
+        status = "ok",
+        service = "Kopano Sovereign Gateway",
+        runtime = ".NET 10",
+        adapter = "youtube.public-media.read",
+        configured = true,
+        upstreamMode = hasApiKey ? "youtube-data-api-v3" : "youtube-public-feed",
+        credentialRequired = false,
+    });
+});
 
 app.MapGet("/api/youtube/uploads", async (
     int? limit,
