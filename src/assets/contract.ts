@@ -2,7 +2,7 @@ export type AssetRole = 'canonical' | 'candidate' | 'reference';
 export type AssetApprovalState = 'candidate' | 'approved' | 'rejected' | 'reference-only';
 export type AssetClassification = 'confirmed' | 'provisional';
 export type AssetAvailability = 'evidence-only' | 'ingested' | 'derived';
-export type AssetMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'video/mp4' | 'audio/mpeg';
+export type AssetMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/svg+xml' | 'video/mp4' | 'audio/mpeg';
 export type AssetSurface =
   | 'hub-header'
   | 'hub-splash'
