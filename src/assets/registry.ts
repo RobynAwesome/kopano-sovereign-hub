@@ -12,7 +12,7 @@ export const sovereignAssetRegistry: SovereignAsset[] = [
     owner: {
       name: 'Kopano Labs',
       organization: 'Kopano Labs',
-      ownershipBasis: 'first-party-generated',
+      ownershipBasis: 'user-declared',
     },
     fingerprint: {
       algorithm: 'sha256',
@@ -31,6 +31,7 @@ export const sovereignAssetRegistry: SovereignAsset[] = [
     notes: [
       'Canonical first-party mark is preserved in the governed Kopano Labs website repository.',
       'SHA-256 was independently re-derived from the exact 984-byte SVG source.',
+      'Ownership remains user-declared; repository custody and hash verification do not independently prove authorship.',
       'The earlier chat JPEG candidate is superseded by this repository-backed canonical source.',
       'Open Graph distribution is intentionally excluded until an approved raster derivative is generated.',
     ],
