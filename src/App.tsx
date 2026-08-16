@@ -2,6 +2,7 @@ import { useMemo, useState, type CSSProperties } from 'react';
 import { evaluateAdapterProofCases } from './adapters/proof';
 import { integrationCandidates, sovereignSurfaces, type SovereignSurface } from './data/registry';
 import { evaluateSurface, readRuntimeSignals } from './lib/kc';
+import { evaluateBacklogProofs } from './poc/backlogProof';
 
 const doors = ['READ', 'PLAY', 'WATCH', 'LISTEN', 'OWN', 'CREATE'] as const;
 type Door = (typeof doors)[number];
@@ -37,7 +38,9 @@ export default function App() {
   const [showIntegrations, setShowIntegrations] = useState(false);
   const signals = useMemo(() => readRuntimeSignals(), []);
   const adapterProof = useMemo(() => evaluateAdapterProofCases(), []);
+  const backlogProofs = useMemo(() => evaluateBacklogProofs(), []);
   const proofPassed = adapterProof.filter((proofCase) => proofCase.passed).length;
+  const backlogPassed = backlogProofs.filter((proof) => proof.state === 'PASS').length;
   const selectedDecision = evaluateSurface(selected);
   const filtered = activeDoor === 'ALL' ? sovereignSurfaces : sovereignSurfaces.filter((surface) => doorForSurface(surface) === activeDoor);
 
@@ -83,13 +86,19 @@ export default function App() {
           <div><span>WebGL2</span><strong>{signals.webgl2 ? 'READY' : 'FALLBACK'}</strong></div>
           <div><span>Service Worker</span><strong>{signals.serviceWorker ? 'READY' : 'NO'}</strong></div>
           <div><span>Adapter Proof</span><strong>{proofPassed}/{adapterProof.length} PASS</strong></div>
+          <div><span>Backlog Proof</span><strong>{backlogPassed}/{backlogProofs.length} PASS</strong></div>
         </div>
         <div className="reason-list">{selectedDecision.reasons.map((reason) => <span key={reason}>◆ {reason}</span>)}</div>
+        <div className="reason-list" aria-label="Sprint backlog proof receipts">
+          {backlogProofs.map((proof) => (
+            <span key={proof.issue}>#{proof.issue} · {proof.state} · {proof.title} · {proof.receiptId}</span>
+          ))}
+        </div>
         <button className="secondary" onClick={() => setShowIntegrations((value) => !value)}>{showIntegrations ? 'Hide external adapters' : 'Inspect external adapters'}</button>
         {showIntegrations && <div className="integration-strip">{integrationCandidates.map((surface) => <SurfaceCard key={surface.id} surface={surface} onInspect={setSelected} />)}</div>}
       </details>
 
-      <footer><span>Kopano Sovereign Hub · Sprint 02 / PR5</span><span>World → media → action → governance when needed</span></footer>
+      <footer><span>Kopano Sovereign Hub · Sprints 03–07 proof ledger</span><span>World → media → action → governance → receipt</span></footer>
     </main>
   );
 }
