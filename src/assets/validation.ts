@@ -34,6 +34,10 @@ export function validateAsset(asset: SovereignAsset): AssetValidationResult {
     violations.push('provisional classification cannot be approved');
   }
 
+  if (asset.availability === 'ingested' && !asset.lineage.sourceReference.startsWith('github://')) {
+    violations.push('ingested first-party assets require a governed repository storage URI');
+  }
+
   return {
     assetId: asset.id,
     valid: violations.length === 0,
@@ -71,16 +75,17 @@ export const assetRegistryProof = {
   registry: validateRegistry(),
   cases: [
     {
-      name: 'evidence-only brand candidate is not distributable yet',
-      passed: canDistribute(sovereignAssetRegistry[0], 'hub-header') === false,
+      name: 'repository-backed Kopano brand mark is distributable on declared Hub surfaces',
+      passed: canDistribute(sovereignAssetRegistry[0], 'hub-header') === true,
     },
     {
       name: 'third-party game reference is never distributable',
       passed: canDistribute(sovereignAssetRegistry[2], 'play') === false,
     },
     {
-      name: 'provisional Jennifer evidence cannot ship before confirmation and ingest',
-      passed: canDistribute(sovereignAssetRegistry[5], 'play') === false,
+      name: 'verified Project Jennifer canonical source is distributable only on declared surfaces',
+      passed: canDistribute(sovereignAssetRegistry[5], 'play') === true
+        && canDistribute(sovereignAssetRegistry[5], 'watch') === false,
     },
   ],
 };
