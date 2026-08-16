@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Kopano.Sovereign.Gateway.Youtube;
@@ -15,14 +17,9 @@ public sealed class YoutubeGatewayClient(
     {
         var apiKey = configuration["YOUTUBE_API_KEY"];
         var handle = configuration["YOUTUBE_CHANNEL_HANDLE"] ?? "@kopanolabs";
-
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new YoutubeGatewayConfigurationException("YOUTUBE_API_KEY is not configured.");
-        }
-
         var boundedLimit = Math.Clamp(limit, 1, 12);
-        var cacheKey = $"youtube:uploads:{handle}:{boundedLimit}";
+        var mode = string.IsNullOrWhiteSpace(apiKey) ? "public-feed" : "data-api-v3";
+        var cacheKey = $"youtube:uploads:{mode}:{handle}:{boundedLimit}";
 
         if (cache.TryGetValue<YoutubeChannelFeed>(cacheKey, out var cachedFeed) && cachedFeed is not null)
         {
@@ -30,20 +27,111 @@ public sealed class YoutubeGatewayClient(
                 cachedFeed,
                 Receipt(requestId, "ALLOW", "executed", ["Public read capability executed through the rigid gateway.", "Response served from bounded in-memory cache (cache-hit)."]),
                 "dotnet-gateway",
-                "YouTube Data API v3");
+                string.IsNullOrWhiteSpace(apiKey) ? "YouTube public Atom feed" : "YouTube Data API v3");
         }
 
-        var client = httpClientFactory.CreateClient("YouTube");
-        var channel = await ResolveChannelAsync(client, apiKey, handle, cancellationToken);
-        var feed = await ReadUploadsAsync(client, apiKey, handle, channel, boundedLimit, cancellationToken);
+        YoutubeChannelFeed feed;
+        string provider;
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            feed = await ReadPublicFeedAsync(handle, boundedLimit, cancellationToken);
+            provider = "YouTube public Atom feed";
+        }
+        else
+        {
+            var client = httpClientFactory.CreateClient("YouTube");
+            var channel = await ResolveChannelAsync(client, apiKey, handle, cancellationToken);
+            feed = await ReadUploadsAsync(client, apiKey, handle, channel, boundedLimit, cancellationToken);
+            provider = "YouTube Data API v3";
+        }
 
         cache.Set(cacheKey, feed, TimeSpan.FromMinutes(5));
 
         return new YoutubeGatewayResponse(
             feed,
-            Receipt(requestId, "ALLOW", "executed", ["Public read capability executed through the rigid gateway.", "Upstream response normalized before returning to the APWA."]),
+            Receipt(requestId, "ALLOW", "executed", [
+                "Public read capability executed through the rigid gateway.",
+                "Upstream response normalized before returning to the APWA.",
+                string.IsNullOrWhiteSpace(apiKey)
+                    ? "Credentialless public-feed transport selected; no deployment secret required for this read-only proof."
+                    : "Restricted API-key transport selected."
+            ]),
             "dotnet-gateway",
-            "YouTube Data API v3");
+            provider);
+    }
+
+    private async Task<YoutubeChannelFeed> ReadPublicFeedAsync(string handle, int limit, CancellationToken cancellationToken)
+    {
+        var client = httpClientFactory.CreateClient("YouTubePublic");
+        var normalizedHandle = handle.StartsWith('@') ? handle : $"@{handle}";
+        using var channelPage = await client.GetAsync(normalizedHandle, cancellationToken);
+        EnsureYoutubeSuccess(channelPage);
+        var html = await channelPage.Content.ReadAsStringAsync(cancellationToken);
+
+        var channelIdMatch = Regex.Match(html, "\\\"(?:channelId|externalId)\\\":\\\"(?<id>UC[0-9A-Za-z_-]{20,})\\\"");
+        if (!channelIdMatch.Success)
+        {
+            throw new YoutubeGatewayNotFoundException($"Could not resolve a public YouTube channel id for configured handle {handle}.");
+        }
+
+        var channelId = channelIdMatch.Groups["id"].Value;
+        using var feedResponse = await client.GetAsync($"feeds/videos.xml?channel_id={Uri.EscapeDataString(channelId)}", cancellationToken);
+        EnsureYoutubeSuccess(feedResponse);
+        await using var stream = await feedResponse.Content.ReadAsStreamAsync(cancellationToken);
+        var document = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken);
+
+        XNamespace atom = "http://www.w3.org/2005/Atom";
+        XNamespace yt = "http://www.youtube.com/xml/schemas/2015";
+        XNamespace media = "http://search.yahoo.com/mrss/";
+
+        var channelTitle = document.Root?.Element(atom + "title")?.Value?.Trim();
+        if (string.IsNullOrWhiteSpace(channelTitle))
+        {
+            channelTitle = handle;
+        }
+
+        var uploads = document.Root?
+            .Elements(atom + "entry")
+            .Take(limit)
+            .Select(entry =>
+            {
+                var videoId = entry.Element(yt + "videoId")?.Value?.Trim();
+                var title = entry.Element(atom + "title")?.Value?.Trim();
+                if (string.IsNullOrWhiteSpace(videoId) || string.IsNullOrWhiteSpace(title))
+                {
+                    return null;
+                }
+
+                DateTimeOffset? publishedAt = null;
+                if (DateTimeOffset.TryParse(entry.Element(atom + "published")?.Value, out var parsedPublishedAt))
+                {
+                    publishedAt = parsedPublishedAt;
+                }
+
+                var group = entry.Element(media + "group");
+                var description = group?.Element(media + "description")?.Value;
+                var thumb = group?.Elements(media + "thumbnail").FirstOrDefault();
+                YoutubeThumbnail? thumbnail = null;
+                if (thumb is not null)
+                {
+                    var width = int.TryParse(thumb.Attribute("width")?.Value, out var parsedWidth) ? parsedWidth : (int?)null;
+                    var height = int.TryParse(thumb.Attribute("height")?.Value, out var parsedHeight) ? parsedHeight : (int?)null;
+                    thumbnail = new YoutubeThumbnail(thumb.Attribute("url")?.Value, width, height);
+                }
+
+                return new YoutubeUpload(
+                    videoId,
+                    title,
+                    description,
+                    publishedAt,
+                    thumbnail,
+                    $"https://www.youtube.com/watch?v={Uri.EscapeDataString(videoId)}");
+            })
+            .Where(upload => upload is not null)
+            .Cast<YoutubeUpload>()
+            .ToList() ?? [];
+
+        return new YoutubeChannelFeed(channelId, handle, channelTitle, "public-feed", uploads, null);
     }
 
     private static async Task<ResolvedChannel> ResolveChannelAsync(

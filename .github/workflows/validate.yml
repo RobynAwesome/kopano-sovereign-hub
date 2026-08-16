@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - 'sprint-*'
+      - 'forge/issue-3-live-gateway-proof'
 
 permissions:
   contents: read
@@ -37,3 +38,49 @@ jobs:
 
       - name: Build rigid gateway
         run: dotnet build gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release
+
+      - name: Live upstream governance-transport proof
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          YOUTUBE_CHANNEL_HANDLE: '@kopanolabs'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kopano-gateway-proof
+          dotnet run --project gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release --no-build --urls http://127.0.0.1:5097 > /tmp/kopano-gateway-proof/gateway.log 2>&1 &
+          gateway_pid=$!
+          trap 'kill "$gateway_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5097/health > /tmp/kopano-gateway-proof/health.json; then
+              break
+            fi
+            sleep 1
+          done
+
+          test -s /tmp/kopano-gateway-proof/health.json
+          jq -e '.status == "ok" and .upstreamMode == "youtube-public-feed" and .credentialRequired == false' /tmp/kopano-gateway-proof/health.json
+
+          curl --fail --silent --show-error \
+            -H 'X-Kopano-Request-Id: sprint01-live-proof' \
+            'http://127.0.0.1:5097/api/youtube/uploads?limit=1' \
+            > /tmp/kopano-gateway-proof/uploads.json
+
+          jq -e '.receipt.gate == "ALLOW" and .receipt.outcome == "executed" and .receipt.requestId == "sprint01-live-proof"' /tmp/kopano-gateway-proof/uploads.json
+          jq -e '.transport == "dotnet-gateway" and .provider == "YouTube public Atom feed"' /tmp/kopano-gateway-proof/uploads.json
+          jq -e '.feed.channelId | startswith("UC")' /tmp/kopano-gateway-proof/uploads.json
+          jq -e '.feed.uploads | length >= 1' /tmp/kopano-gateway-proof/uploads.json
+
+          jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg run "$GITHUB_RUN_ID" \
+            --slurpfile health /tmp/kopano-gateway-proof/health.json \
+            --slurpfile uploads /tmp/kopano-gateway-proof/uploads.json \
+            '{schema:"kopano.gateway.live-proof.v1",commit:$commit,runId:$run,health:$health[0],response:$uploads[0],truthBoundary:"Ephemeral CI deployment receipt proving live .NET gateway -> YouTube public upstream transport. This is not a long-lived production-host SLA."}' \
+            > /tmp/kopano-gateway-proof/receipt.json
+
+      - name: Upload gateway proof receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint-01-gateway-live-proof
+          path: /tmp/kopano-gateway-proof/
+          if-no-files-found: error
