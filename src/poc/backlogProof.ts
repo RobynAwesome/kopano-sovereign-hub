@@ -1,6 +1,7 @@
 import { assetById } from '../assets/registry';
 import { canDistribute } from '../assets/validation';
 import { sovereignSurfaces } from '../data/registry';
+import { validatedCommerceReceipts, validatedCreatorPayoutReceipts } from './externalReceipts';
 
 export type BacklogProofState = 'PASS' | 'EXTERNAL_GATE' | 'FAIL';
 
@@ -65,7 +66,6 @@ export const commercePoc = {
   },
   orderReceiptContract: {
     required: ['orderId', 'productId', 'amountMinor', 'currency', 'provider', 'occurredAt', 'kcReceiptId'] as const,
-    realReceiptId: null as string | null,
   },
 } as const;
 
@@ -85,7 +85,6 @@ export const creatorEconomyPoc = {
     model: 'net-revenue-share-bps',
     contributorShareBps: 7000,
     platformShareBps: 3000,
-    realTransactionReceiptId: null as string | null,
   },
 } as const;
 
@@ -126,9 +125,11 @@ export function evaluateBacklogProofs(): BacklogProofReceipt[] {
   const commerceCodePathReady = assetReady(commercePoc.sourceAssetId, 'own')
     && commercePoc.product.currency === 'ZAR'
     && commercePoc.orderReceiptContract.required.includes('kcReceiptId');
+  const commerceReceipts = validatedCommerceReceipts();
 
   const creatorCodePathReady = creatorEconomyPoc.moderationDecision === 'ALLOW'
     && creatorEconomyPoc.payoutModel.contributorShareBps + creatorEconomyPoc.payoutModel.platformShareBps === 10000;
+  const creatorPayoutReceipts = validatedCreatorPayoutReceipts();
 
   const serviceLaneReady = serviceDeliveryPoc.source.url.startsWith('https://www.gov.za/')
     && serviceDeliveryPoc.delivery.actionUrl.startsWith('https://www.gov.za/')
@@ -177,21 +178,21 @@ export function evaluateBacklogProofs(): BacklogProofReceipt[] {
       issue: 7,
       sprint: 'Sprint 05',
       title: 'Commerce / OWN',
-      state: commerceCodePathReady && commercePoc.orderReceiptContract.realReceiptId ? 'PASS' : commerceCodePathReady ? 'EXTERNAL_GATE' : 'FAIL',
-      receiptId: 'kc:commerce:contract:2026-08-16:001',
+      state: commerceCodePathReady && commerceReceipts.length > 0 ? 'PASS' : commerceCodePathReady ? 'EXTERNAL_GATE' : 'FAIL',
+      receiptId: commerceReceipts[0]?.providerReceiptId ?? 'kc:commerce:contract:2026-08-16:001',
       path: 'canonical asset -> governed product -> deep-link boundary -> external order receipt -> KC receipt',
-      evidence: [commercePoc.adapterId, commercePoc.product.id, ...commercePoc.orderReceiptContract.required],
-      guardrail: 'No completed-order claim until a real KopanoLabs.shop/provider order receipt is ingested.',
+      evidence: [commercePoc.adapterId, commercePoc.product.id, ...commercePoc.orderReceiptContract.required, ...commerceReceipts.map((receipt) => receipt.providerReceiptId)],
+      guardrail: 'PASS requires a typed, validated, completed production-provider order receipt. Fixtures, sandbox objects and unpaid invoices are rejected.',
     },
     {
       issue: 8,
       sprint: 'Sprint 06',
       title: 'Creator Economy / CREATE + EARN',
-      state: creatorCodePathReady && creatorEconomyPoc.payoutModel.realTransactionReceiptId ? 'PASS' : creatorCodePathReady ? 'EXTERNAL_GATE' : 'FAIL',
-      receiptId: creatorEconomyPoc.submissionReceiptId,
+      state: creatorCodePathReady && creatorPayoutReceipts.length > 0 ? 'PASS' : creatorCodePathReady ? 'EXTERNAL_GATE' : 'FAIL',
+      receiptId: creatorPayoutReceipts[0]?.providerReceiptId ?? creatorEconomyPoc.submissionReceiptId,
       path: 'identity -> ownership declaration -> submission receipt -> KC moderation -> approved derivative -> payout receipt',
-      evidence: [creatorEconomyPoc.contributorIdentity.contributorId, creatorEconomyPoc.moderationDecision, creatorEconomyPoc.approvedDerivativePath],
-      guardrail: 'No revenue or payout validation claim until at least one real transaction receipt exists.',
+      evidence: [creatorEconomyPoc.contributorIdentity.contributorId, creatorEconomyPoc.moderationDecision, creatorEconomyPoc.approvedDerivativePath, ...creatorPayoutReceipts.map((receipt) => receipt.providerReceiptId)],
+      guardrail: 'PASS requires a typed, validated, paid production-provider payout receipt whose amounts reconcile to the governed 70/30 split.',
     },
     {
       issue: 9,
