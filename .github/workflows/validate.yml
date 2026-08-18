@@ -27,6 +27,9 @@ jobs:
       - name: Install web dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Governed experiment registry
+        run: npm run validate:experiments
+
       - name: Typecheck and build APWA
         run: npm run build
 
@@ -39,7 +42,7 @@ jobs:
       - name: Build rigid gateway
         run: dotnet build gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release
 
-      - name: Live upstream governance-transport proof
+      - name: Live runtime governance-transport proof
         env:
           ASPNETCORE_ENVIRONMENT: Production
           YOUTUBE_CHANNEL_HANDLE: '@kopanolabs'
@@ -59,6 +62,17 @@ jobs:
 
           test -s /tmp/kopano-gateway-proof/health.json
           jq -e '.status == "ok" and .upstreamMode == "youtube-public-feed" and .credentialRequired == false' /tmp/kopano-gateway-proof/health.json
+          jq -e '.experimentRegistry.nodes >= 15 and .experimentRegistry.renterAssertion == "I_AM_STATELESS_RENTER_NOT_LANDLORD"' /tmp/kopano-gateway-proof/health.json
+
+          curl --fail --silent --show-error \
+            'http://127.0.0.1:5097/api/governance/experiments' \
+            > /tmp/kopano-gateway-proof/experiments.json
+
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.experiment-estate.read"' /tmp/kopano-gateway-proof/experiments.json
+          jq -e '.laws.realityIndex == "REALITY_STATE > INDEX_STATE"' /tmp/kopano-gateway-proof/experiments.json
+          jq -e '.nodes[] | select(.id == "cape-campass") | .state == "TARGET" and .repo == null' /tmp/kopano-gateway-proof/experiments.json
+          jq -e '.nodes[] | select(.id == "starfall-salvage") | .state == "REWORK" and .lifecycle == "PRUNE"' /tmp/kopano-gateway-proof/experiments.json
+          jq -e '.nodes[] | select(.id == "harvest-4-all") | .lifecycle == "HARVEST"' /tmp/kopano-gateway-proof/experiments.json
 
           curl --fail --silent --show-error \
             -H 'X-Kopano-Request-Id: sprint01-live-proof' \
@@ -74,13 +88,14 @@ jobs:
             --arg commit "$GITHUB_SHA" \
             --arg run "$GITHUB_RUN_ID" \
             --slurpfile health /tmp/kopano-gateway-proof/health.json \
+            --slurpfile experiments /tmp/kopano-gateway-proof/experiments.json \
             --slurpfile uploads /tmp/kopano-gateway-proof/uploads.json \
-            '{schema:"kopano.gateway.live-proof.v1",commit:$commit,runId:$run,health:$health[0],response:$uploads[0],truthBoundary:"Ephemeral CI deployment receipt proving live .NET gateway -> YouTube public upstream transport. This is not a long-lived production-host SLA."}' \
+            '{schema:"kopano.gateway.live-proof.v2",commit:$commit,runId:$run,health:$health[0],experiments:$experiments[0],response:$uploads[0],truthBoundary:"Ephemeral CI deployment receipt proving the .NET gateway exposes the governed experiment registry and live YouTube transport. MAIN-BRAIN remains constitutional authority; this is not a long-lived production-host SLA."}' \
             > /tmp/kopano-gateway-proof/receipt.json
 
       - name: Upload gateway proof receipt
         uses: actions/upload-artifact@v4
         with:
-          name: sprint-01-gateway-live-proof
+          name: sovereign-hub-runtime-proof
           path: /tmp/kopano-gateway-proof/
           if-no-files-found: error
