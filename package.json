@@ -1,11 +1,12 @@
 {
   "name": "kopano-sovereign-hub",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run validate:experiments && npm run typecheck && vite build",
+    "validate:experiments": "node scripts/validate-experiment-registry.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

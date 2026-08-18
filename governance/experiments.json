@@ -1,0 +1,202 @@
+{
+  "schema": "kopano.sovereign.experiment-estate.v1",
+  "snapshotDate": "2026-08-18",
+  "authority": {
+    "constitutional": "https://github.com/RobynAwesome/Introduction-to-MCP/tree/master/Schematics/21-KOPANO-PHU%20GOVERNACE%20SYSTEMS/MAIN-BRAIN",
+    "runtime": "https://github.com/RobynAwesome/kopano-sovereign-hub",
+    "publicEvidence": "https://kopanolabs.com",
+    "repoNamespace": "https://github.com/RobynAwesome"
+  },
+  "laws": {
+    "renterAssertion": "I_AM_STATELESS_RENTER_NOT_LANDLORD",
+    "claimDefault": "MAYBE",
+    "realityIndex": "REALITY_STATE > INDEX_STATE",
+    "promotion": "WORKING -> CONNECTED -> CURRENT -> VISIBLE -> EVIDENCED -> BACKABLE",
+    "convergence": "MCP -> MMAO -> KC/KPGS -> GSMB/KPSMB -> CCP -> POC_RECEIPT"
+  },
+  "legacyLifecycle": {
+    "source": "MAIN-BRAIN/VANGUARD_PHASE32_LIFECYCLE.md",
+    "phases": ["PLANT", "WATER", "PRUNE", "HARVEST", "FRUIT"],
+    "note": "Lifecycle assignments are preserved where MAIN-BRAIN explicitly defined them. Newer experiments are not force-fit into an older phase without a receipt."
+  },
+  "nodes": [
+    {
+      "id": "kopano-context",
+      "name": "Kopano Context",
+      "lane": "governance-orchestration",
+      "lifecycle": "PLANT",
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/kopano-context",
+      "publicSurface": null,
+      "backing": "internal governance runtime",
+      "description": "Multi-agent orchestration, audit and governed context surface. MAIN-BRAIN remains constitutional authority."
+    },
+    {
+      "id": "crisis-connect",
+      "name": "CrisisConnect",
+      "lane": "field-intelligence",
+      "lifecycle": "PLANT",
+      "state": "FIELD",
+      "repo": "https://github.com/RobynAwesome/crisis-connect",
+      "publicSurface": "https://crisisconnect.kopanolabs.com",
+      "backing": "field evidence; no institutional-backing claim encoded here",
+      "description": "Mobile-first crisis reporting, GPS-anchored lived telemetry and offline evidence flows."
+    },
+    {
+      "id": "kasilink",
+      "name": "KasiLink",
+      "lane": "opportunity-network",
+      "lifecycle": "WATER",
+      "state": "LIVE",
+      "repo": "https://github.com/RobynAwesome/KasiLink",
+      "publicSurface": "https://kasilink.com",
+      "backing": "government backing is a target, not a current claim",
+      "description": "Township opportunity, service discovery and low-data routing."
+    },
+    {
+      "id": "fivesarena-blog",
+      "name": "5s Arena Blog",
+      "lane": "client-editorial-organ",
+      "lifecycle": "WATER",
+      "state": "GOVERNED_EXTERNAL",
+      "repo": "https://github.com/RobynAwesome/5s-Arena-Blog",
+      "publicSurface": "https://blog.fivesarena.com",
+      "backing": "client operating environment; operational venue truth remains FivesArena.com",
+      "description": "Editorial/community organ in the Five's Arena client system. It cannot silently promote demo/editorial data into operational venue truth."
+    },
+    {
+      "id": "portfolio",
+      "name": "Founder Portfolio",
+      "lane": "identity-proof",
+      "lifecycle": "PRUNE",
+      "state": "PUBLIC",
+      "repo": "https://github.com/RobynAwesome/Portfolio",
+      "publicSurface": "https://krrababalela.com",
+      "backing": "identity and founder-work evidence",
+      "description": "Founder identity and engineering lineage surface."
+    },
+    {
+      "id": "starfall-salvage",
+      "name": "Starfall Salvage",
+      "lane": "interactive-systems-lab",
+      "lifecycle": "PRUNE",
+      "state": "REWORK",
+      "repo": "https://github.com/RobynAwesome/starfall-salvage",
+      "publicSurface": "https://starfallsalvage.kopanolabs.com",
+      "backing": "operations/game-function quality requires rework before investor push",
+      "description": "Playable systems lab for interfaces, telemetry, resilience and governance experiments."
+    },
+    {
+      "id": "harvest-4-all",
+      "name": "Harvest-4-All",
+      "lane": "agriculture-food-system",
+      "lifecycle": "HARVEST",
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/Harvest-4-All",
+      "publicSurface": null,
+      "declaredDomain": "harvest4all.com",
+      "backing": "no current backing claim encoded",
+      "description": "Agriculture and food-system experiment retained from the original MMAO lifecycle."
+    },
+    {
+      "id": "bookit-fivesarena",
+      "name": "Bookit 5s Arena",
+      "lane": "client-operational-system",
+      "lifecycle": "HARVEST",
+      "state": "VALIDATED_LIVE",
+      "repo": "https://github.com/RobynAwesome/Bookit-5s-Arena",
+      "publicSurface": "https://fivesarena.com",
+      "backing": "Hellenic FC operating environment",
+      "description": "External client venue system and real-world validation input. Hub observes receipts; it does not own venue truth."
+    },
+    {
+      "id": "cape-campass",
+      "name": "Cape Campass",
+      "lane": "tourism-mobility-experiment",
+      "lifecycle": null,
+      "state": "TARGET",
+      "repo": null,
+      "publicSurface": null,
+      "declaredDomain": "capecampass.com",
+      "backing": "tourism-sector backing is a target, not a current claim",
+      "description": "Governance experiment preserved from the GSMB distribution manifest. Repository/runtime binding remains MAYBE until a current receipt is attached."
+    },
+    {
+      "id": "cars4mars",
+      "name": "Cars4Mars",
+      "lane": "cyber-physical-engineering",
+      "lifecycle": null,
+      "state": "BUILD",
+      "repo": "https://github.com/RobynAwesome/cars4mars-project",
+      "publicSurface": "https://kopanolabs.com/Cars4Mars/",
+      "backing": "active competition/build programme; physical validation remains receipt-gated",
+      "description": "Rover architecture, browser simulation, public build ledger and physical validation programme."
+    },
+    {
+      "id": "project-jennifer",
+      "name": "Project Jennifer",
+      "lane": "ai-runtime-game-lab",
+      "lifecycle": null,
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/Project-Jennifer",
+      "publicSurface": null,
+      "backing": "internal product and governed agent experimentation",
+      "description": "AI runtime, game-world and governed agent surface used to test execution, provenance and POC/FOC boundaries."
+    },
+    {
+      "id": "freddy-nw-alfalfa",
+      "name": "North West 10-acre Lucerne / Alfalfa",
+      "lane": "client-field-validation",
+      "lifecycle": null,
+      "state": "VALIDATED_FIELD",
+      "repo": null,
+      "publicSurface": "https://kopanolabs.com/FOC/#field-validation",
+      "backing": "named client field workflow; MAIN-BRAIN records a year-one R3,500/month floor",
+      "description": "Frost, irrigation, regrowth, livestock and water-security decision support. This is validation input, not an internal experiment product."
+    },
+    {
+      "id": "flow-inc-ink",
+      "name": "Flow Inc Ink",
+      "lane": "client-delivery-validation",
+      "lifecycle": null,
+      "state": "DELIVERED_EXTERNAL",
+      "repo": "https://github.com/RobynAwesome/flow-inc-ink-demo",
+      "publicSurface": "https://kopanolabs.com/FOC/#field-validation",
+      "backing": "completed external delivery",
+      "description": "External digital delivery receipt for an operating tattoo and piercing business."
+    },
+    {
+      "id": "paws-and-potjie",
+      "name": "Paws & Potjie",
+      "lane": "adaptive-pwa-lab",
+      "lifecycle": null,
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/paws-and-potjie",
+      "publicSurface": null,
+      "backing": "challenge/project proof",
+      "description": "Adaptive PWA and interaction lab used to test governed frontend patterns."
+    },
+    {
+      "id": "classroom50",
+      "name": "Classroom50",
+      "lane": "education-experiment",
+      "lifecycle": null,
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/classroom50",
+      "publicSurface": null,
+      "backing": "education project; no institutional-backing claim encoded",
+      "description": "Education/classroom experiment in the public RobynAwesome estate."
+    },
+    {
+      "id": "ngwekazi",
+      "name": "Ngwekazi Student Entrepreneurship Programme",
+      "lane": "education-entrepreneurship",
+      "lifecycle": null,
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/Ngwekazi-Student-Entrepreneurship-Programme",
+      "publicSurface": null,
+      "backing": "programme workspace; external outcomes remain receipt-gated",
+      "description": "Student entrepreneurship experiment and programme workspace."
+    }
+  ]
+}
