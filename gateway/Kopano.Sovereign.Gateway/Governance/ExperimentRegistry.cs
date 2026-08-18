@@ -15,6 +15,14 @@ public sealed record ExperimentLaws(
     string Promotion,
     string Convergence);
 
+public sealed record ExperimentPublicProjection(
+    string Consumer,
+    string Policy,
+    bool RelationSourceOwned,
+    string PrivateContext,
+    string CommercialTerms,
+    string Rule);
+
 public sealed record ExperimentLifecycle(
     string Source,
     IReadOnlyList<string> Phases,
@@ -24,6 +32,7 @@ public sealed record ExperimentNode(
     string Id,
     string Name,
     string Lane,
+    string Relation,
     string? Lifecycle,
     string State,
     string? Repo,
@@ -37,12 +46,20 @@ public sealed record ExperimentRegistryDocument(
     string SnapshotDate,
     ExperimentAuthority Authority,
     ExperimentLaws Laws,
+    ExperimentPublicProjection PublicProjection,
     ExperimentLifecycle LegacyLifecycle,
     IReadOnlyList<ExperimentNode> Nodes);
 
 public sealed class ExperimentRegistry
 {
     public const string RenterAssertion = "I_AM_STATELESS_RENTER_NOT_LANDLORD";
+    private static readonly HashSet<string> AllowedRelations = new(StringComparer.Ordinal)
+    {
+        "experiment",
+        "validation-input",
+        "evidence-surface",
+    };
+
     private readonly ExperimentRegistryDocument _document;
 
     public ExperimentRegistry(IWebHostEnvironment environment)
@@ -70,6 +87,9 @@ public sealed class ExperimentRegistry
         if (!string.Equals(_document.Laws.RenterAssertion, RenterAssertion, StringComparison.Ordinal))
             throw new InvalidOperationException("Experiment registry failed the stateless renter contract.");
 
+        if (!_document.PublicProjection.RelationSourceOwned)
+            throw new InvalidOperationException("Public projection must preserve source-owned relation classification.");
+
         var duplicateIds = _document.Nodes
             .GroupBy(node => node.Id, StringComparer.OrdinalIgnoreCase)
             .Where(group => group.Count() > 1)
@@ -78,6 +98,14 @@ public sealed class ExperimentRegistry
 
         if (duplicateIds.Length > 0)
             throw new InvalidOperationException($"Duplicate experiment ids: {string.Join(", ", duplicateIds)}");
+
+        var invalidRelations = _document.Nodes
+            .Where(node => !AllowedRelations.Contains(node.Relation))
+            .Select(node => $"{node.Id}:{node.Relation}")
+            .ToArray();
+
+        if (invalidRelations.Length > 0)
+            throw new InvalidOperationException($"Invalid experiment relations: {string.Join(", ", invalidRelations)}");
     }
 
     public ExperimentRegistryDocument Document => _document;
