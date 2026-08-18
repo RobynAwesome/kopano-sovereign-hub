@@ -22,6 +22,7 @@ builder.Services.AddHttpClient("YouTubePublic", client =>
 });
 builder.Services.AddSingleton<YoutubeGatewayClient>();
 builder.Services.AddSingleton<ExperimentRegistry>();
+builder.Services.AddSingleton<PublicEvidenceParser>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -46,7 +47,7 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
         status = "ok",
         service = "Kopano Sovereign Gateway",
         runtime = ".NET 10",
-        adapters = new[] { "youtube.public-media.read", "kpgs.experiment-estate.read" },
+        adapters = new[] { "youtube.public-media.read", "kpgs.experiment-estate.read", "kpgs.public-evidence.parse" },
         configured = true,
         upstreamMode = hasApiKey ? "youtube-data-api-v3" : "youtube-public-feed",
         credentialRequired = false,
@@ -79,6 +80,30 @@ app.MapGet("/api/governance/experiments", (ExperimentRegistry experiments) => Re
         truthBoundary = "The Sovereign Hub is a runtime projection. Introduction-to-MCP / MAIN-BRAIN remains constitutional source authority.",
     },
 }));
+
+app.MapGet("/api/public/evidence", (ExperimentRegistry experiments, PublicEvidenceParser parser) =>
+{
+    var summary = parser.Parse(experiments.Document);
+    return Results.Ok(new
+    {
+        summary.Schema,
+        summary.Headline,
+        summary.Intro,
+        summary.PrimaryAction,
+        summary.PrimaryActionHref,
+        summary.Items,
+        summary.Technical,
+        receipt = new
+        {
+            gate = "ALLOW",
+            outcome = "parsed",
+            adapterId = "kpgs.public-evidence.parse",
+            sourceSchema = experiments.Document.Schema,
+            sourceSnapshot = experiments.Document.SnapshotDate,
+            truthBoundary = "The parser reduces governance detail for public usability; it does not promote or invent claims."
+        }
+    });
+});
 
 app.MapGet("/api/governance/experiments/{id}", (string id, ExperimentRegistry experiments) =>
 {
