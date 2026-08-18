@@ -1,0 +1,13 @@
+.governance-experiments{margin-top:2rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.08)}
+.registry-law{margin:-.5rem 0 1.25rem;color:rgba(255,255,255,.55);font:700 .72rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em}
+.experiment-card{display:flex;flex-direction:column;min-height:22rem;text-align:left}
+.experiment-card .surface-card__art{min-height:7rem}
+.experiment-backing{display:block;margin-top:auto;padding-top:1rem;color:rgba(255,255,255,.62);font-size:.75rem;line-height:1.5}
+.experiment-links{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:1rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.08)}
+.experiment-links a,.experiment-links span{color:var(--accent,#fff);font-size:.72rem;font-weight:800;text-decoration:none;letter-spacing:.03em}
+.experiment-links a:hover{text-decoration:underline}
+.gate--pass{color:#7bf59b;background:rgba(123,245,155,.09);border-color:rgba(123,245,155,.28)}
+.gate--building{color:#45d6ff;background:rgba(69,214,255,.09);border-color:rgba(69,214,255,.28)}
+.gate--review{color:#ffb347;background:rgba(255,179,71,.09);border-color:rgba(255,179,71,.28)}
+.gate--maybe{color:#d9dce3;background:rgba(217,220,227,.08);border-color:rgba(217,220,227,.18)}
+@media (max-width:720px){.registry-law{font-size:.65rem}.experiment-card{min-height:0}}
