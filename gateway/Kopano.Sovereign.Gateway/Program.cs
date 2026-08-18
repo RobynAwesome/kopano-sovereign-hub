@@ -7,7 +7,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 var configuredOrigins = builder.Configuration["KOPANO_ALLOWED_ORIGINS"];
 var allowedOrigins = (string.IsNullOrWhiteSpace(configuredOrigins)
-        ? new[] { "https://kopanolabs.com", "https://www.kopanolabs.com" }
+        ? new[]
+        {
+            "https://kopanolabs.com",
+            "https://www.kopanolabs.com",
+            "https://fivesarena.com",
+            "https://www.fivesarena.com",
+            "https://kasilink.com",
+            "https://www.kasilink.com",
+            "https://crisisconnect.kopanolabs.com",
+            "https://starfallsalvage.kopanolabs.com",
+            "https://krrababalela.com",
+            "https://www.krrababalela.com",
+        }
         : configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
     .Distinct(StringComparer.OrdinalIgnoreCase)
     .ToArray();
@@ -28,18 +40,19 @@ builder.Services.AddHttpClient("YouTube", client =>
 {
     client.BaseAddress = new Uri("https://www.googleapis.com/youtube/v3/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.5");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.6");
 });
 builder.Services.AddHttpClient("YouTubePublic", client =>
 {
     client.BaseAddress = new Uri("https://www.youtube.com/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.5");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.6");
 });
 builder.Services.AddSingleton<YoutubeGatewayClient>();
 builder.Services.AddSingleton<ExperimentRegistry>();
 builder.Services.AddSingleton<PublicEvidenceParser>();
 builder.Services.AddSingleton<RtcpRegistry>();
+builder.Services.AddSingleton<ProgressiveUpdateRuntime>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -59,13 +72,25 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         limiter.AutoReplenishment = true;
     });
+    options.AddFixedWindowLimiter("progressive-update", limiter =>
+    {
+        limiter.PermitLimit = 120;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 16;
+        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiter.AutoReplenishment = true;
+    });
 });
 
 var app = builder.Build();
 app.UseCors("kopano-web");
 app.UseRateLimiter();
 
-app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experiments, RtcpRegistry rtcp) =>
+app.MapGet("/health", (
+    IConfiguration configuration,
+    ExperimentRegistry experiments,
+    RtcpRegistry rtcp,
+    ProgressiveUpdateRuntime progressive) =>
 {
     var hasApiKey = !string.IsNullOrWhiteSpace(configuration["YOUTUBE_API_KEY"]);
     return Results.Ok(new
@@ -73,7 +98,16 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
         status = "ok",
         service = "Kopano Sovereign Gateway",
         runtime = ".NET 10",
-        adapters = new[] { "youtube.public-media.read", "kpgs.experiment-estate.read", "kpgs.public-evidence.parse", "kpgs.rtcp.read", "kpgs.rtcp.route" },
+        adapters = new[]
+        {
+            "youtube.public-media.read",
+            "kpgs.experiment-estate.read",
+            "kpgs.public-evidence.parse",
+            "kpgs.rtcp.read",
+            "kpgs.rtcp.route",
+            "kpgs.progressive-update.execute",
+            "kpgs.swfus.distribution.read",
+        },
         configured = true,
         upstreamMode = hasApiKey ? "youtube-data-api-v3" : "youtube-public-feed",
         credentialRequired = false,
@@ -99,6 +133,19 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
             domains = rtcp.Document.Domains.Count,
             constitutionalAuthority = rtcp.Document.Authority.Constitutional,
             executionMode = "GOVERNANCE_ROUTE_ONLY",
+        },
+        progressiveUpdates = new
+        {
+            schema = ProgressiveUpdateContract.UpdateSchema,
+            receiptSchema = ProgressiveUpdateContract.ReceiptSchema,
+            boundaryMarker = ProgressiveUpdateContract.BoundaryMarker,
+            canonicalRepository = ProgressiveUpdateContract.CanonicalRepository,
+            canonicalCommit = ProgressiveUpdateContract.CanonicalCommit,
+            projectionDurability = progressive.ProjectionDurability,
+            projectionNodes = progressive.ProjectionCount,
+            distributionEvents = progressive.DistributionCount,
+            constitutionalAuthority = false,
+            transportGrantsAuthority = false,
         },
     });
 });
@@ -143,6 +190,61 @@ app.MapGet("/api/governance/rtcp", (RtcpRegistry rtcp) => Results.Ok(new
 
 app.MapPost("/api/rtcp/route", (RtcpRouteRequest request, RtcpRegistry rtcp) => Results.Ok(rtcp.Route(request)))
     .RequireRateLimiting("rtcp-route");
+
+static IResult ExecuteProgressiveUpdate(
+    ProgressiveUpdateRequest request,
+    ProgressiveUpdateRuntime runtime) => Results.Ok(runtime.Execute(request));
+
+// Canonical adapter path expected by estate PWAs.
+app.MapPost("/kpgs/progressive-updates", ExecuteProgressiveUpdate)
+    .RequireRateLimiting("progressive-update");
+
+// API-prefixed alias keeps the Hub's existing route convention without creating
+// a second contract. Both paths execute the exact same singleton runtime.
+app.MapPost("/api/kpgs/progressive-updates", ExecuteProgressiveUpdate)
+    .RequireRateLimiting("progressive-update");
+
+app.MapGet("/api/kpgs/progressive-updates/status", (ProgressiveUpdateRuntime progressive) =>
+    Results.Ok(new
+    {
+        schema = "kpgs.progressive-update-runtime.v1",
+        canonicalContract = new
+        {
+            repository = ProgressiveUpdateContract.CanonicalRepository,
+            commit = ProgressiveUpdateContract.CanonicalCommit,
+            updateSchema = ProgressiveUpdateContract.UpdateSchema,
+            receiptSchema = ProgressiveUpdateContract.ReceiptSchema,
+            boundaryMarker = ProgressiveUpdateContract.BoundaryMarker,
+        },
+        projection = new
+        {
+            durability = progressive.ProjectionDurability,
+            nodes = progressive.ProjectionCount,
+            authoritative = false,
+        },
+        idempotency = new
+        {
+            durability = progressive.ProjectionDurability,
+            keys = progressive.IdempotencyCount,
+        },
+        distribution = new
+        {
+            events = progressive.DistributionCount,
+            authoritative = false,
+            transportGrantsAuthority = false,
+        },
+        truthBoundary = "This adapter may mutate only process-local non-authoritative projections. Synchronization receipts do not grant canonical authority.",
+    }));
+
+app.MapGet("/api/kpgs/progressive-updates/distribution", (int? limit, ProgressiveUpdateRuntime progressive) =>
+    Results.Ok(new
+    {
+        schema = "kpgs.swfus.distribution-feed.v1",
+        canonical = false,
+        authorityEffect = "none",
+        transportGrantsAuthority = false,
+        events = progressive.ReadDistribution(limit ?? 25),
+    }));
 
 app.MapGet("/api/public/evidence", (ExperimentRegistry experiments, PublicEvidenceParser parser) =>
 {
