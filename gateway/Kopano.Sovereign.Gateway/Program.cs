@@ -5,20 +5,36 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var configuredOrigins = builder.Configuration["KOPANO_ALLOWED_ORIGINS"];
+var allowedOrigins = (string.IsNullOrWhiteSpace(configuredOrigins)
+        ? new[] { "https://kopanolabs.com", "https://www.kopanolabs.com" }
+        : configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
 builder.Logging.AddFilter("System.Net.Http.HttpClient.YouTube", LogLevel.Warning);
 builder.Logging.AddFilter("System.Net.Http.HttpClient.YouTubePublic", LogLevel.Warning);
 builder.Services.AddMemoryCache();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("kopano-web", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddHttpClient("YouTube", client =>
 {
     client.BaseAddress = new Uri("https://www.googleapis.com/youtube/v3/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.4");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.5");
 });
 builder.Services.AddHttpClient("YouTubePublic", client =>
 {
     client.BaseAddress = new Uri("https://www.youtube.com/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.4");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.5");
 });
 builder.Services.AddSingleton<YoutubeGatewayClient>();
 builder.Services.AddSingleton<ExperimentRegistry>();
@@ -46,6 +62,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+app.UseCors("kopano-web");
 app.UseRateLimiter();
 
 app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experiments, RtcpRegistry rtcp) =>
@@ -60,6 +77,12 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
         configured = true,
         upstreamMode = hasApiKey ? "youtube-data-api-v3" : "youtube-public-feed",
         credentialRequired = false,
+        browserIngress = new
+        {
+            corsPolicy = "kopano-web",
+            origins = allowedOrigins,
+            credentials = false,
+        },
         experimentRegistry = new
         {
             schema = experiments.Document.Schema,

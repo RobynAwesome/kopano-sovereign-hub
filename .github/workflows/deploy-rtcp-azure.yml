@@ -1,0 +1,175 @@
+name: Deploy RTCP Gateway to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY_RTCP to authorize Azure resource changes and possible billing.'
+        required: true
+        type: string
+      skuName:
+        description: 'Azure App Service SKU'
+        required: true
+        default: 'B1'
+        type: choice
+        options:
+          - B1
+          - B2
+          - S1
+          - P0v3
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: kopano-rtcp-azure-prod
+  cancel-in-progress: false
+
+env:
+  AZURE_LOCATION: southafricanorth
+  AZURE_RESOURCE_GROUP: rg-kopano-sovereign-prod
+  GATEWAY_PROJECT: gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj
+
+jobs:
+  deploy:
+    if: inputs.confirmation == 'DEPLOY_RTCP'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+
+      - name: Build and publish gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet build "$GATEWAY_PROJECT" --configuration Release
+          dotnet publish "$GATEWAY_PROJECT" --configuration Release --no-build --output "$RUNNER_TEMP/rtcp-publish"
+          cd "$RUNNER_TEMP/rtcp-publish"
+          zip -qr "$RUNNER_TEMP/rtcp-gateway.zip" .
+
+      - name: Log in to Azure with GitHub OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Provision South Africa North RTCP App Service
+        id: infra
+        shell: bash
+        run: |
+          set -euo pipefail
+          az group create \
+            --name "$AZURE_RESOURCE_GROUP" \
+            --location "$AZURE_LOCATION" \
+            --output none
+
+          az deployment group what-if \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --template-file infra/rtcp-gateway.bicep \
+            --parameters location="$AZURE_LOCATION" envName=prod skuName='${{ inputs.skuName }}' \
+            --no-pretty-print
+
+          deployment_json="$(az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "rtcp-${GITHUB_RUN_ID}" \
+            --template-file infra/rtcp-gateway.bicep \
+            --parameters location="$AZURE_LOCATION" envName=prod skuName='${{ inputs.skuName }}' \
+            --output json)"
+
+          app_name="$(jq -r '.properties.outputs.webAppName.value' <<< "$deployment_json")"
+          base_url="$(jq -r '.properties.outputs.gatewayBaseUrl.value' <<< "$deployment_json")"
+          principal_id="$(jq -r '.properties.outputs.managedIdentityPrincipalId.value' <<< "$deployment_json")"
+
+          test -n "$app_name"
+          test -n "$base_url"
+          echo "app_name=$app_name" >> "$GITHUB_OUTPUT"
+          echo "base_url=$base_url" >> "$GITHUB_OUTPUT"
+          echo "principal_id=$principal_id" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy published .NET gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          az webapp deploy \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name '${{ steps.infra.outputs.app_name }}' \
+            --src-path "$RUNNER_TEMP/rtcp-gateway.zip" \
+            --type zip \
+            --async false \
+            --output none
+
+      - name: Prove live RTCP gateway and browser ingress
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rtcp-azure-proof"
+          base='${{ steps.infra.outputs.base_url }}'
+
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error "$base/health" > "$RUNNER_TEMP/rtcp-azure-proof/health.json"; then
+              break
+            fi
+            sleep 5
+          done
+
+          test -s "$RUNNER_TEMP/rtcp-azure-proof/health.json"
+          jq -e '.status == "ok" and .runtime == ".NET 10"' "$RUNNER_TEMP/rtcp-azure-proof/health.json"
+          jq -e '.rtcp.seats == 10 and .rtcp.executionMode == "GOVERNANCE_ROUTE_ONLY"' "$RUNNER_TEMP/rtcp-azure-proof/health.json"
+          jq -e '.browserIngress.origins | index("https://kopanolabs.com") != null' "$RUNNER_TEMP/rtcp-azure-proof/health.json"
+
+          curl --silent --show-error --dump-header "$RUNNER_TEMP/rtcp-azure-proof/preflight.headers" --output /dev/null \
+            -X OPTIONS \
+            -H 'Origin: https://kopanolabs.com' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type' \
+            "$base/api/rtcp/route"
+
+          grep -Eqi '^access-control-allow-origin:[[:space:]]*https://kopanolabs\.com' "$RUNNER_TEMP/rtcp-azure-proof/preflight.headers"
+
+          curl --fail --silent --show-error \
+            -H 'Origin: https://kopanolabs.com' \
+            -H 'Content-Type: application/json' \
+            -d '{"intent":"I need work near me","requestId":"azure-rtcp-proof"}' \
+            "$base/api/rtcp/route" \
+            > "$RUNNER_TEMP/rtcp-azure-proof/route.json"
+
+          jq -e '.domain.id == "kasilink"' "$RUNNER_TEMP/rtcp-azure-proof/route.json"
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.rtcp.route"' "$RUNNER_TEMP/rtcp-azure-proof/route.json"
+          jq -e '.execution.mode == "GOVERNANCE_ROUTE_ONLY" and .execution.providerBinding == "UNBOUND"' "$RUNNER_TEMP/rtcp-azure-proof/route.json"
+
+          jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg baseUrl "$base" \
+            --arg appName '${{ steps.infra.outputs.app_name }}' \
+            --arg region "$AZURE_LOCATION" \
+            --arg sku '${{ inputs.skuName }}' \
+            --arg principalId '${{ steps.infra.outputs.principal_id }}' \
+            --slurpfile health "$RUNNER_TEMP/rtcp-azure-proof/health.json" \
+            --slurpfile route "$RUNNER_TEMP/rtcp-azure-proof/route.json" \
+            '{schema:"kopano.rtcp.azure-deployment-receipt.v1",commit:$commit,runId:$runId,baseUrl:$baseUrl,appName:$appName,region:$region,sku:$sku,managedIdentityPrincipalId:$principalId,health:$health[0],route:$route[0],gate:"ALLOW",truthBoundary:"Azure deployment receipt proves the public .NET RTCP gateway and browser ingress. It does not prove any LLM/provider execution while providerBinding remains UNBOUND."}' \
+            > "$RUNNER_TEMP/rtcp-azure-proof/deployment-receipt.json"
+
+          echo "### RTCP Azure gateway" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: $base" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Region: $AZURE_LOCATION" >> "$GITHUB_STEP_SUMMARY"
+          echo "- App Service: ${{ steps.infra.outputs.app_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- RTCP: 10 seats · route receipt ALLOW" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Provider execution: UNBOUND" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Azure deployment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtcp-azure-deployment-receipt
+          path: ${{ runner.temp }}/rtcp-azure-proof/
+          if-no-files-found: warn
