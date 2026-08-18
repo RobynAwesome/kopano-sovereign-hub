@@ -1,0 +1,75 @@
+name: Validate Progressive Updates
+
+on:
+  pull_request:
+    paths:
+      - "gateway/Kopano.Sovereign.Gateway/**"
+      - "scripts/verify-progressive-update-gateway.sh"
+      - ".github/workflows/validate-progressive-updates.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "gateway/Kopano.Sovereign.Gateway/**"
+      - "scripts/verify-progressive-update-gateway.sh"
+      - ".github/workflows/validate-progressive-updates.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-progressive-update-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+          dotnet-quality: "ga"
+
+      - name: Build gateway
+        run: dotnet build gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release
+
+      - name: Start gateway
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kopano-progressive-update-proof
+          dotnet run \
+            --project gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj \
+            --configuration Release \
+            --no-build \
+            --urls http://127.0.0.1:5097 \
+            > /tmp/kopano-progressive-update-proof/gateway.log 2>&1 &
+          echo $! > /tmp/kopano-progressive-update-proof/gateway.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5097/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/kopano-progressive-update-proof/gateway.log
+          exit 1
+
+      - name: Prove APU CRUD SWFUS contract
+        env:
+          KPGS_GATEWAY_URL: http://127.0.0.1:5097
+          KPGS_PROOF_DIR: /tmp/kopano-progressive-update-proof
+        run: bash scripts/verify-progressive-update-gateway.sh
+
+      - name: Stop gateway
+        if: always()
+        run: |
+          pid="$(cat /tmp/kopano-progressive-update-proof/gateway.pid 2>/dev/null || true)"
+          if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; fi
+
+      - name: Upload progressive-update proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: progressive-update-gateway-proof
+          path: /tmp/kopano-progressive-update-proof/
+          if-no-files-found: warn
