@@ -63,7 +63,9 @@ jobs:
           test -s /tmp/kopano-gateway-proof/health.json
           jq -e '.status == "ok" and .credentialRequired == false' /tmp/kopano-gateway-proof/health.json
           jq -e '.adapters | index("kpgs.public-evidence.parse") != null' /tmp/kopano-gateway-proof/health.json
+          jq -e '.adapters | index("kpgs.rtcp.route") != null' /tmp/kopano-gateway-proof/health.json
           jq -e '.experimentRegistry.nodes >= 15 and .experimentRegistry.renterAssertion == "I_AM_STATELESS_RENTER_NOT_LANDLORD"' /tmp/kopano-gateway-proof/health.json
+          jq -e '.rtcp.seats == 10 and .rtcp.executionMode == "GOVERNANCE_ROUTE_ONLY"' /tmp/kopano-gateway-proof/health.json
 
           curl --fail --silent --show-error \
             'http://127.0.0.1:5097/api/governance/experiments' \
@@ -74,6 +76,34 @@ jobs:
           jq -e '.nodes[] | select(.id == "cape-campass") | .state == "TARGET" and .repo == null' /tmp/kopano-gateway-proof/experiments.json
           jq -e '.nodes[] | select(.id == "starfall-salvage") | .state == "REWORK" and .lifecycle == "PRUNE"' /tmp/kopano-gateway-proof/experiments.json
           jq -e '.nodes[] | select(.id == "harvest-4-all") | .lifecycle == "HARVEST"' /tmp/kopano-gateway-proof/experiments.json
+
+          curl --fail --silent --show-error \
+            'http://127.0.0.1:5097/api/governance/rtcp' \
+            > /tmp/kopano-gateway-proof/rtcp.json
+
+          jq -e '.schema == "kopano.rtcp.runtime.v1" and (.council | length) == 10' /tmp/kopano-gateway-proof/rtcp.json
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.rtcp.read"' /tmp/kopano-gateway-proof/rtcp.json
+          jq -e '[.council[].name] == ["KC","CASSEY","CASSIE","KESSA","YASSIE","APEX","THARI","KHELOS","ANCHOR","ANTIGRAVITY"]' /tmp/kopano-gateway-proof/rtcp.json
+
+          curl --fail --silent --show-error \
+            -H 'Content-Type: application/json' \
+            -d '{"intent":"I need work near me","requestId":"ci-rtcp-kasilink"}' \
+            'http://127.0.0.1:5097/api/rtcp/route' \
+            > /tmp/kopano-gateway-proof/rtcp-route-kasilink.json
+
+          jq -e '.schema == "kopano.rtcp.route.v1" and .domain.id == "kasilink"' /tmp/kopano-gateway-proof/rtcp-route-kasilink.json
+          jq -e '.execution.mode == "GOVERNANCE_ROUTE_ONLY" and .execution.providerBinding == "UNBOUND"' /tmp/kopano-gateway-proof/rtcp-route-kasilink.json
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.rtcp.route"' /tmp/kopano-gateway-proof/rtcp-route-kasilink.json
+          jq -e '[.council[].id] | index("kc") != null and index("cassey") != null and index("anchor") != null and index("khelos") != null and index("antigravity") != null' /tmp/kopano-gateway-proof/rtcp-route-kasilink.json
+
+          curl --fail --silent --show-error \
+            -H 'Content-Type: application/json' \
+            -d '{"intent":"review rover architecture and physical validation","requestId":"ci-rtcp-mars"}' \
+            'http://127.0.0.1:5097/api/rtcp/route' \
+            > /tmp/kopano-gateway-proof/rtcp-route-mars.json
+
+          jq -e '.domain.id == "cars4mars" and .execution.providerBinding == "UNBOUND"' /tmp/kopano-gateway-proof/rtcp-route-mars.json
+          jq -e '[.council[].id] | index("cassie") != null and index("kessa") != null and index("khelos") != null' /tmp/kopano-gateway-proof/rtcp-route-mars.json
 
           curl --fail --silent --show-error \
             'http://127.0.0.1:5097/api/public/evidence' \
@@ -95,8 +125,11 @@ jobs:
             --arg run "$GITHUB_RUN_ID" \
             --slurpfile health /tmp/kopano-gateway-proof/health.json \
             --slurpfile experiments /tmp/kopano-gateway-proof/experiments.json \
+            --slurpfile rtcp /tmp/kopano-gateway-proof/rtcp.json \
+            --slurpfile rtcpKasi /tmp/kopano-gateway-proof/rtcp-route-kasilink.json \
+            --slurpfile rtcpMars /tmp/kopano-gateway-proof/rtcp-route-mars.json \
             --slurpfile publicEvidence /tmp/kopano-gateway-proof/public-evidence-runtime.json \
-            '{schema:"kopano.gateway.governance-proof.v2",commit:$commit,runId:$run,health:$health[0],experiments:$experiments[0],publicEvidence:$publicEvidence[0],gate:"ALLOW",truthBoundary:"Hard gate proving the .NET gateway exposes governed experiment state and parses it into a smaller user-facing evidence contract."}' \
+            '{schema:"kopano.gateway.governance-proof.v3",commit:$commit,runId:$run,health:$health[0],experiments:$experiments[0],rtcp:$rtcp[0],rtcpRoutes:{kasilink:$rtcpKasi[0],cars4mars:$rtcpMars[0]},publicEvidence:$publicEvidence[0],gate:"ALLOW",truthBoundary:"Hard gate proving the .NET gateway exposes governed experiment state, RTCP routing, and public evidence without claiming provider execution before a provider receipt exists."}' \
             > /tmp/kopano-gateway-proof/governance-receipt.json
 
       - name: External YouTube transport observation

@@ -1,0 +1,46 @@
+{
+  "schema": "kopano.rtcp.runtime.v1",
+  "snapshotDate": "2026-08-18",
+  "authority": {
+    "constitutional": "RobynAwesome/Introduction-to-MCP/docs/swarm-ops/RTCP_SPEC.json",
+    "runtime": "RobynAwesome/kopano-sovereign-hub",
+    "rule": "The Hub projects RTCP for execution; MAIN-BRAIN remains constitutional authority."
+  },
+  "laws": {
+    "renterAssertion": "I_AM_STATELESS_RENTER_NOT_LANDLORD",
+    "decisionDefault": "MAYBE",
+    "routing": "ONE_INGRESS -> RTCP -> DOMAIN_ADAPTER -> RECEIPT",
+    "identity": "IDENTITY != MODEL; identity is persistent governed context applied to a provider/runtime.",
+    "domainIsolation": "Each DNS/PWA keeps its own product state, landlord and agent cohort. RTCP coordinates without collapsing products into one monolith."
+  },
+  "publicProjection": {
+    "consumer": "https://github.com/RobynAwesome/Kopano-Labs-Website",
+    "policy": "PUBLIC_COUNCIL_ROUTING",
+    "presentationMayTransform": true,
+    "claimsMayTransform": false,
+    "providerInternals": "WITHHOLD_UNTIL_VERIFIED_PUBLIC_RECEIPT",
+    "rule": "KopanoLabs.com may present council identities and domain routing warmly, but cannot invent provider execution, domain state, council membership or authority."
+  },
+  "council": [
+    {"seat":1,"id":"kc","name":"KC","title":"Kopano Context — The Landlord","role":"Observe, classify, ledger and retain constitutional boundary","type":"SOVEREIGN","weight":"ABSOLUTE"},
+    {"seat":2,"id":"cassey","name":"CASSEY","title":"The Teacher","role":"Student-Teacher Protocol, curriculum and persistent learning context","type":"MAO","weight":"TEACHING"},
+    {"seat":3,"id":"cassie","name":"CASSIE","title":"The Builder","role":"Construction, infrastructure and system architecture","type":"MAO","weight":"BUILDING"},
+    {"seat":4,"id":"kessa","name":"KESSA","title":"Deep Minds KPGS","role":"Protocol research, KCRP/DMKP/KPCB+ and deep validation","type":"MMAO","weight":"PROTOCOL"},
+    {"seat":5,"id":"yassie","name":"YASSIE","title":"Cultural Intelligence","role":"Narrative and cultural pattern validation","type":"MAO","weight":"CULTURAL"},
+    {"seat":6,"id":"apex","name":"APEX","title":"Strategic Orchestrator","role":"Cross-domain strategy and resource arbitration","type":"MMAO","weight":"STRATEGIC"},
+    {"seat":7,"id":"thari","name":"THARI","title":"Guardian AI","role":"Protocol weaving, WWJD boundary and safe user navigation","type":"MAO","weight":"GUARDIAN"},
+    {"seat":8,"id":"khelos","name":"KHELOS","title":"Validator","role":"Signal integrity, POC validation and FOC blocking","type":"MMAO","weight":"VALIDATION"},
+    {"seat":9,"id":"anchor","name":"ANCHOR","title":"Perimeter","role":"Ingress protection, personnel shield and environment boundary","type":"MAO","weight":"PERIMETER"},
+    {"seat":10,"id":"antigravity","name":"ANTIGRAVITY","title":"Chief Facilitator","role":"Compile council output into one bounded runtime return","type":"CF","weight":"FACILITATION"}
+  ],
+  "domains": [
+    {"id":"kopanolabs","label":"Kopano Labs","host":"kopanolabs.com","state":"LIVE","integration":"ADAPT_EXISTING","primaryCouncil":["kc","apex","thari","khelos","antigravity"],"intentTerms":["company","labs","system","project","proof","ai"]},
+    {"id":"context","label":"Kopano Context","host":"context.kopanolabs.com","state":"POC","integration":"ADAPT_EXISTING","primaryCouncil":["kc","cassey","kessa","thari","khelos"],"intentTerms":["context","agent","orchestration","governance","protocol","memory"]},
+    {"id":"kasilink","label":"KasiLink","host":"kasilink.com","state":"LIVE","integration":"ADAPT_EXISTING","primaryCouncil":["kc","cassey","thari","anchor","antigravity"],"intentTerms":["job","work","opportunity","service","kasi","business"]},
+    {"id":"fivesarena","label":"FiveS Arena","host":"fivesarena.com","state":"VALIDATED_LIVE","integration":"ADAPT_EXISTING","primaryCouncil":["kc","cassie","apex","khelos","antigravity"],"intentTerms":["football","booking","fixture","arena","venue","sport"]},
+    {"id":"crisisconnect","label":"CrisisConnect","host":"crisisconnect.kopanolabs.com","state":"FIELD","integration":"ADAPT_EXISTING","primaryCouncil":["kc","thari","khelos","anchor","antigravity"],"intentTerms":["crisis","safety","gps","report","emergency","field"]},
+    {"id":"starfall","label":"Starfall Salvage","host":"starfallsalvage.kopanolabs.com","state":"REWORK","integration":"ADAPT_EXISTING","primaryCouncil":["kc","cassie","yassie","khelos","antigravity"],"intentTerms":["game","play","starfall","salvage","telemetry","interactive"]},
+    {"id":"portfolio","label":"Founder Portfolio","host":"krrababalela.com","state":"PUBLIC","integration":"ADAPT_EXISTING","primaryCouncil":["kc","yassie","thari","khelos","antigravity"],"intentTerms":["founder","portfolio","identity","robyn","career","bio"]},
+    {"id":"cars4mars","label":"Cars4Mars","host":"kopanolabs.com/Cars4Mars","state":"BUILD","integration":"ADAPT_EXISTING","primaryCouncil":["kc","cassie","kessa","khelos","antigravity"],"intentTerms":["rover","mars","motor","traction","engineering","physical"]}
+  ]
+}

@@ -12,17 +12,18 @@ builder.Services.AddHttpClient("YouTube", client =>
 {
     client.BaseAddress = new Uri("https://www.googleapis.com/youtube/v3/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.3");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.4");
 });
 builder.Services.AddHttpClient("YouTubePublic", client =>
 {
     client.BaseAddress = new Uri("https://www.youtube.com/");
     client.Timeout = TimeSpan.FromSeconds(12);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.3");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Kopano-Sovereign-Gateway/0.4");
 });
 builder.Services.AddSingleton<YoutubeGatewayClient>();
 builder.Services.AddSingleton<ExperimentRegistry>();
 builder.Services.AddSingleton<PublicEvidenceParser>();
+builder.Services.AddSingleton<RtcpRegistry>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -34,12 +35,20 @@ builder.Services.AddRateLimiter(options =>
         limiter.QueueLimit = 0;
         limiter.AutoReplenishment = true;
     });
+    options.AddFixedWindowLimiter("rtcp-route", limiter =>
+    {
+        limiter.PermitLimit = 60;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 8;
+        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiter.AutoReplenishment = true;
+    });
 });
 
 var app = builder.Build();
 app.UseRateLimiter();
 
-app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experiments) =>
+app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experiments, RtcpRegistry rtcp) =>
 {
     var hasApiKey = !string.IsNullOrWhiteSpace(configuration["YOUTUBE_API_KEY"]);
     return Results.Ok(new
@@ -47,7 +56,7 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
         status = "ok",
         service = "Kopano Sovereign Gateway",
         runtime = ".NET 10",
-        adapters = new[] { "youtube.public-media.read", "kpgs.experiment-estate.read", "kpgs.public-evidence.parse" },
+        adapters = new[] { "youtube.public-media.read", "kpgs.experiment-estate.read", "kpgs.public-evidence.parse", "kpgs.rtcp.read", "kpgs.rtcp.route" },
         configured = true,
         upstreamMode = hasApiKey ? "youtube-data-api-v3" : "youtube-public-feed",
         credentialRequired = false,
@@ -58,6 +67,15 @@ app.MapGet("/health", (IConfiguration configuration, ExperimentRegistry experime
             nodes = experiments.Document.Nodes.Count,
             constitutionalAuthority = experiments.Document.Authority.Constitutional,
             renterAssertion = experiments.Document.Laws.RenterAssertion,
+        },
+        rtcp = new
+        {
+            schema = rtcp.Document.Schema,
+            snapshotDate = rtcp.Document.SnapshotDate,
+            seats = rtcp.Document.Council.Count,
+            domains = rtcp.Document.Domains.Count,
+            constitutionalAuthority = rtcp.Document.Authority.Constitutional,
+            executionMode = "GOVERNANCE_ROUTE_ONLY",
         },
     });
 });
@@ -80,6 +98,28 @@ app.MapGet("/api/governance/experiments", (ExperimentRegistry experiments) => Re
         truthBoundary = "The Sovereign Hub is a runtime projection. Introduction-to-MCP / MAIN-BRAIN remains constitutional source authority.",
     },
 }));
+
+app.MapGet("/api/governance/rtcp", (RtcpRegistry rtcp) => Results.Ok(new
+{
+    schema = rtcp.Document.Schema,
+    snapshotDate = rtcp.Document.SnapshotDate,
+    authority = rtcp.Document.Authority,
+    laws = rtcp.Document.Laws,
+    council = rtcp.Document.Council,
+    domains = rtcp.Document.Domains,
+    receipt = new
+    {
+        gate = "ALLOW",
+        outcome = "read",
+        adapterId = "kpgs.rtcp.read",
+        constitutionalAuthority = rtcp.Document.Authority.Constitutional,
+        runtimeAuthority = rtcp.Document.Authority.Runtime,
+        truthBoundary = "The Hub projects the Round Table for runtime coordination; MAIN-BRAIN remains constitutional authority.",
+    },
+}));
+
+app.MapPost("/api/rtcp/route", (RtcpRouteRequest request, RtcpRegistry rtcp) => Results.Ok(rtcp.Route(request)))
+    .RequireRateLimiting("rtcp-route");
 
 app.MapGet("/api/public/evidence", (ExperimentRegistry experiments, PublicEvidenceParser parser) =>
 {
