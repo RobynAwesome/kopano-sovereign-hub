@@ -4,14 +4,16 @@ namespace Kopano.Sovereign.Gateway.Governance;
 
 public sealed record RtcpAuthority(string Constitutional, string Runtime, string Rule);
 public sealed record RtcpLaws(string RenterAssertion, string DecisionDefault, string Routing, string Identity, string DomainIsolation);
+public sealed record RtcpPublicProjection(string Consumer, string Policy, bool PresentationMayTransform, bool ClaimsMayTransform, string ProviderInternals, string Rule);
 public sealed record RtcpSeat(int Seat, string Id, string Name, string Title, string Role, string Type, string Weight);
 public sealed record RtcpDomain(string Id, string Label, string Host, string State, string Integration, IReadOnlyList<string> PrimaryCouncil, IReadOnlyList<string> IntentTerms);
-public sealed record RtcpDocument(string Schema, string SnapshotDate, RtcpAuthority Authority, RtcpLaws Laws, IReadOnlyList<RtcpSeat> Council, IReadOnlyList<RtcpDomain> Domains);
+public sealed record RtcpDocument(string Schema, string SnapshotDate, RtcpAuthority Authority, RtcpLaws Laws, RtcpPublicProjection PublicProjection, IReadOnlyList<RtcpSeat> Council, IReadOnlyList<RtcpDomain> Domains);
 public sealed record RtcpRouteRequest(string? Intent, string? Domain, string? RequestId);
 
 public sealed class RtcpRegistry
 {
     public const string RenterAssertion = "I_AM_STATELESS_RENTER_NOT_LANDLORD";
+    public const string PublicConsumer = "https://github.com/RobynAwesome/Kopano-Labs-Website";
     private readonly RtcpDocument _document;
 
     public RtcpRegistry(IWebHostEnvironment environment)
@@ -36,6 +38,10 @@ public sealed class RtcpRegistry
 
         if (!string.Equals(_document.Laws.RenterAssertion, RenterAssertion, StringComparison.Ordinal))
             throw new InvalidOperationException("RTCP registry failed the stateless renter contract.");
+        if (!string.Equals(_document.PublicProjection.Consumer, PublicConsumer, StringComparison.Ordinal))
+            throw new InvalidOperationException("RTCP public projection consumer drifted.");
+        if (_document.PublicProjection.ClaimsMayTransform)
+            throw new InvalidOperationException("RTCP public projection cannot transform governance claims.");
         if (_document.Council.Count != 10)
             throw new InvalidOperationException($"RTCP requires exactly 10 council seats; found {_document.Council.Count}.");
         if (_document.Council.Select(member => member.Seat).Distinct().Count() != 10)
