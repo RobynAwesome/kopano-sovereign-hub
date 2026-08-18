@@ -1,0 +1,107 @@
+name: Validate RTCP Deployment Contract
+
+on:
+  pull_request:
+    paths:
+      - 'gateway/Kopano.Sovereign.Gateway/**'
+      - 'infra/rtcp-gateway.bicep'
+      - '.github/workflows/deploy-rtcp-azure.yml'
+      - '.github/workflows/validate-rtcp-deployment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+
+      - name: Build gateway
+        run: dotnet build gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release
+
+      - name: Compile Azure Bicep without provisioning
+        shell: bash
+        run: |
+          set -euo pipefail
+          az bicep build --file infra/rtcp-gateway.bicep --stdout > "$RUNNER_TEMP/rtcp-gateway.arm.json"
+          jq -e '.resources | length >= 2' "$RUNNER_TEMP/rtcp-gateway.arm.json"
+          jq -e '.resources[] | select(.type == "Microsoft.Web/sites") | .properties.httpsOnly == true' "$RUNNER_TEMP/rtcp-gateway.arm.json"
+
+      - name: Prove browser CORS and RTCP route contract
+        env:
+          ASPNETCORE_ENVIRONMENT: Production
+          KOPANO_ALLOWED_ORIGINS: https://kopanolabs.com,https://www.kopanolabs.com
+          YOUTUBE_CHANNEL_HANDLE: '@kopanolabs'
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof="$RUNNER_TEMP/rtcp-deploy-contract"
+          mkdir -p "$proof"
+
+          dotnet run \
+            --project gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj \
+            --configuration Release \
+            --no-build \
+            --urls http://127.0.0.1:5098 \
+            > "$proof/gateway.log" 2>&1 &
+          gateway_pid=$!
+          trap 'kill "$gateway_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5098/health > "$proof/health.json"; then
+              break
+            fi
+            sleep 1
+          done
+
+          test -s "$proof/health.json"
+          jq -e '.status == "ok" and .runtime == ".NET 10"' "$proof/health.json"
+          jq -e '.browserIngress.credentials == false' "$proof/health.json"
+          jq -e '.browserIngress.origins | index("https://kopanolabs.com") != null' "$proof/health.json"
+          jq -e '.rtcp.seats == 10 and .rtcp.executionMode == "GOVERNANCE_ROUTE_ONLY"' "$proof/health.json"
+
+          curl --silent --show-error --dump-header "$proof/preflight.headers" --output /dev/null \
+            -X OPTIONS \
+            -H 'Origin: https://kopanolabs.com' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type' \
+            http://127.0.0.1:5098/api/rtcp/route
+
+          grep -Eqi '^access-control-allow-origin:[[:space:]]*https://kopanolabs\.com' "$proof/preflight.headers"
+          grep -Eqi '^access-control-allow-methods:.*POST' "$proof/preflight.headers"
+
+          curl --fail --silent --show-error \
+            -H 'Origin: https://kopanolabs.com' \
+            -H 'Content-Type: application/json' \
+            -d '{"intent":"I need work near me","requestId":"ci-browser-ingress"}' \
+            http://127.0.0.1:5098/api/rtcp/route \
+            > "$proof/route.json"
+
+          jq -e '.domain.id == "kasilink"' "$proof/route.json"
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.rtcp.route"' "$proof/route.json"
+          jq -e '.execution.providerBinding == "UNBOUND"' "$proof/route.json"
+
+          jq -n \
+            --arg commit "$GITHUB_SHA" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --slurpfile health "$proof/health.json" \
+            --slurpfile route "$proof/route.json" \
+            '{schema:"kopano.rtcp.deployment-contract-proof.v1",commit:$commit,runId:$runId,health:$health[0],route:$route[0],bicep:"COMPILED",cors:"ALLOW_KOPANOLABS",gate:"ALLOW",truthBoundary:"This receipt proves deployability, browser ingress and RTCP routing locally. It does not prove Azure resources were provisioned or any provider model executed."}' \
+            > "$proof/receipt.json"
+
+      - name: Upload deployment contract proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: rtcp-deployment-contract-proof
+          path: ${{ runner.temp }}/rtcp-deploy-contract/
+          if-no-files-found: error
