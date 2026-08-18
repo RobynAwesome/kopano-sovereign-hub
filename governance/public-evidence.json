@@ -1,0 +1,39 @@
+{
+  "schema": "kopano.public-evidence.v1",
+  "headline": "Built in real environments.",
+  "intro": "We test our systems with real operators, real constraints and real work — not only inside demos.",
+  "primaryAction": "Explore our work",
+  "primaryActionHref": "https://kopanolabs.com/content/",
+  "items": [
+    {
+      "id": "bookit-fivesarena",
+      "name": "Bookit 5s Arena",
+      "area": "Venue operations",
+      "state": "Live",
+      "summary": "External client venue system and real-world validation input.",
+      "href": "https://fivesarena.com"
+    },
+    {
+      "id": "freddy-nw-alfalfa",
+      "name": "North West 10-acre Lucerne / Alfalfa",
+      "area": "Agriculture",
+      "state": "In the field",
+      "summary": "Frost, irrigation, regrowth, livestock and water-security decision support.",
+      "href": "https://kopanolabs.com/FOC/#field-validation"
+    },
+    {
+      "id": "flow-inc-ink",
+      "name": "Flow Inc Ink",
+      "area": "Local business",
+      "state": "Delivered",
+      "summary": "External digital delivery receipt for an operating tattoo and piercing business.",
+      "href": "https://kopanolabs.com/FOC/#field-validation"
+    }
+  ],
+  "technical": {
+    "source": "https://github.com/RobynAwesome/Introduction-to-MCP/tree/master/Schematics/21-KOPANO-PHU%20GOVERNACE%20SYSTEMS/MAIN-BRAIN",
+    "runtime": "https://github.com/RobynAwesome/kopano-sovereign-hub",
+    "rule": "Detailed governance stays behind the interface. Public claims remain bounded by receipts.",
+    "detailsHref": "https://kopanolabs.com/proof/"
+  }
+}
