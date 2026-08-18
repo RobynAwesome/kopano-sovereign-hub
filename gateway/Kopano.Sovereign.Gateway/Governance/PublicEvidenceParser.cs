@@ -53,6 +53,20 @@ public sealed class PublicEvidenceParser
         ["education-entrepreneurship"] = "Entrepreneurship",
     };
 
+    private static readonly IReadOnlyDictionary<string, string> FriendlyNames = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["bookit-fivesarena"] = "Five's Arena × Hellenic FC",
+        ["freddy-nw-alfalfa"] = "North West lucerne farm",
+        ["flow-inc-ink"] = "Flow Inc Ink",
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> FriendlySummaries = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["bookit-fivesarena"] = "Booking, competitions and venue workflows operating in a real Cape Town football environment.",
+        ["freddy-nw-alfalfa"] = "Decision support for frost, irrigation, crop regrowth, livestock and water security on a working farm.",
+        ["flow-inc-ink"] = "Completed digital delivery for an operating tattoo and piercing business in Midrand.",
+    };
+
     private static readonly string[] PrimaryStates =
     [
         "VALIDATED_LIVE",
@@ -85,13 +99,14 @@ public sealed class PublicEvidenceParser
 
     private static PublicEvidenceItem ToPublicItem(ExperimentNode node)
     {
-        var summary = FirstSentence(node.Description);
+        var name = FriendlyNames.TryGetValue(node.Id, out var friendlyName) ? friendlyName : node.Name;
+        var summary = FriendlySummaries.TryGetValue(node.Id, out var friendlySummary) ? friendlySummary : FirstSentence(node.Description);
         var state = FriendlyStates.TryGetValue(node.State, out var friendlyState) ? friendlyState : Humanize(node.State);
         var area = FriendlyAreas.TryGetValue(node.Lane, out var friendlyArea) ? friendlyArea : Humanize(node.Lane);
 
         return new PublicEvidenceItem(
             node.Id,
-            node.Name,
+            name,
             area,
             state,
             summary,
