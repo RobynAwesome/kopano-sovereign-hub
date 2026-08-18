@@ -48,12 +48,18 @@ public sealed class ExperimentRegistry
     public ExperimentRegistry(IWebHostEnvironment environment)
     {
         var configured = Environment.GetEnvironmentVariable("KOPANO_EXPERIMENT_REGISTRY_PATH");
-        var path = string.IsNullOrWhiteSpace(configured)
-            ? Path.Combine(environment.ContentRootPath, "Governance", "experiments.json")
-            : configured;
+        var candidates = string.IsNullOrWhiteSpace(configured)
+            ? new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "Governance", "experiments.json"),
+                Path.Combine(environment.ContentRootPath, "Governance", "experiments.json"),
+                Path.GetFullPath(Path.Combine(environment.ContentRootPath, "..", "..", "governance", "experiments.json")),
+            }
+            : new[] { configured };
 
-        if (!File.Exists(path))
-            throw new FileNotFoundException("Governed experiment registry was not found.", path);
+        var path = candidates.FirstOrDefault(File.Exists);
+        if (path is null)
+            throw new FileNotFoundException($"Governed experiment registry was not found. Checked: {string.Join(" | ", candidates)}");
 
         var json = File.ReadAllText(path);
         _document = JsonSerializer.Deserialize<ExperimentRegistryDocument>(json, new JsonSerializerOptions
