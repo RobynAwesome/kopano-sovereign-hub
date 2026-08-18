@@ -94,8 +94,9 @@ jobs:
             > /tmp/kopano-gateway-proof/receipt.json
 
       - name: Upload gateway proof receipt
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sovereign-hub-runtime-proof
           path: /tmp/kopano-gateway-proof/
-          if-no-files-found: error
+          if-no-files-found: warn
