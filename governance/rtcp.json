@@ -13,6 +13,14 @@
     "identity": "IDENTITY != MODEL; identity is persistent governed context applied to a provider/runtime.",
     "domainIsolation": "Each DNS/PWA keeps its own product state, landlord and agent cohort. RTCP coordinates without collapsing products into one monolith."
   },
+  "publicProjection": {
+    "consumer": "https://github.com/RobynAwesome/Kopano-Labs-Website",
+    "policy": "PUBLIC_COUNCIL_ROUTING",
+    "presentationMayTransform": true,
+    "claimsMayTransform": false,
+    "providerInternals": "WITHHOLD_UNTIL_VERIFIED_PUBLIC_RECEIPT",
+    "rule": "KopanoLabs.com may present council identities and domain routing warmly, but cannot invent provider execution, domain state, council membership or authority."
+  },
   "council": [
     {"seat":1,"id":"kc","name":"KC","title":"Kopano Context — The Landlord","role":"Observe, classify, ledger and retain constitutional boundary","type":"SOVEREIGN","weight":"ABSOLUTE"},
     {"seat":2,"id":"cassey","name":"CASSEY","title":"The Teacher","role":"Student-Teacher Protocol, curriculum and persistent learning context","type":"MAO","weight":"TEACHING"},
