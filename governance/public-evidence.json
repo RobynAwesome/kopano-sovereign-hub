@@ -7,18 +7,18 @@
   "items": [
     {
       "id": "bookit-fivesarena",
-      "name": "Bookit 5s Arena",
+      "name": "Five's Arena × Hellenic FC",
       "area": "Venue operations",
       "state": "Live",
-      "summary": "External client venue system and real-world validation input.",
+      "summary": "Booking, competitions and venue workflows operating in a real Cape Town football environment.",
       "href": "https://fivesarena.com"
     },
     {
       "id": "freddy-nw-alfalfa",
-      "name": "North West 10-acre Lucerne / Alfalfa",
+      "name": "North West lucerne farm",
       "area": "Agriculture",
       "state": "In the field",
-      "summary": "Frost, irrigation, regrowth, livestock and water-security decision support.",
+      "summary": "Decision support for frost, irrigation, crop regrowth, livestock and water security on a working farm.",
       "href": "https://kopanolabs.com/FOC/#field-validation"
     },
     {
@@ -26,7 +26,7 @@
       "name": "Flow Inc Ink",
       "area": "Local business",
       "state": "Delivered",
-      "summary": "External digital delivery receipt for an operating tattoo and piercing business.",
+      "summary": "Completed digital delivery for an operating tattoo and piercing business in Midrand.",
       "href": "https://kopanolabs.com/FOC/#field-validation"
     }
   ],
