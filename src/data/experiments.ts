@@ -1,9 +1,12 @@
 import registry from '../../governance/experiments.json';
 
+export type ExperimentRelation = 'experiment' | 'validation-input' | 'evidence-surface';
+
 export type ExperimentNode = {
   id: string;
   name: string;
   lane: string;
+  relation: ExperimentRelation;
   lifecycle: 'PLANT' | 'WATER' | 'PRUNE' | 'HARVEST' | 'FRUIT' | null;
   state: string;
   repo: string | null;
@@ -28,6 +31,14 @@ export type ExperimentRegistry = {
     realityIndex: string;
     promotion: string;
     convergence: string;
+  };
+  publicProjection: {
+    consumer: string;
+    policy: string;
+    relationSourceOwned: boolean;
+    privateContext: string;
+    commercialTerms: string;
+    rule: string;
   };
   legacyLifecycle: {
     source: string;
