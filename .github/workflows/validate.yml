@@ -62,6 +62,7 @@ jobs:
 
           test -s /tmp/kopano-gateway-proof/health.json
           jq -e '.status == "ok" and .credentialRequired == false' /tmp/kopano-gateway-proof/health.json
+          jq -e '.adapters | index("kpgs.public-evidence.parse") != null' /tmp/kopano-gateway-proof/health.json
           jq -e '.experimentRegistry.nodes >= 15 and .experimentRegistry.renterAssertion == "I_AM_STATELESS_RENTER_NOT_LANDLORD"' /tmp/kopano-gateway-proof/health.json
 
           curl --fail --silent --show-error \
@@ -74,12 +75,28 @@ jobs:
           jq -e '.nodes[] | select(.id == "starfall-salvage") | .state == "REWORK" and .lifecycle == "PRUNE"' /tmp/kopano-gateway-proof/experiments.json
           jq -e '.nodes[] | select(.id == "harvest-4-all") | .lifecycle == "HARVEST"' /tmp/kopano-gateway-proof/experiments.json
 
+          curl --fail --silent --show-error \
+            'http://127.0.0.1:5097/api/public/evidence' \
+            > /tmp/kopano-gateway-proof/public-evidence-runtime.json
+
+          jq -e '.receipt.gate == "ALLOW" and .receipt.adapterId == "kpgs.public-evidence.parse"' /tmp/kopano-gateway-proof/public-evidence-runtime.json
+          jq -e '.items | length == 3' /tmp/kopano-gateway-proof/public-evidence-runtime.json
+          jq -e '.items[] | select(.id == "bookit-fivesarena") | .state == "Live"' /tmp/kopano-gateway-proof/public-evidence-runtime.json
+          jq -e '.items[] | select(.id == "freddy-nw-alfalfa") | .state == "In the field"' /tmp/kopano-gateway-proof/public-evidence-runtime.json
+          jq -e '.items[] | select(.id == "flow-inc-ink") | .state == "Delivered"' /tmp/kopano-gateway-proof/public-evidence-runtime.json
+
+          jq 'del(.receipt)' /tmp/kopano-gateway-proof/public-evidence-runtime.json > /tmp/kopano-gateway-proof/public-evidence-parsed.json
+          jq -S . /tmp/kopano-gateway-proof/public-evidence-parsed.json > /tmp/kopano-gateway-proof/public-evidence-parsed.sorted.json
+          jq -S . governance/public-evidence.json > /tmp/kopano-gateway-proof/public-evidence-source.sorted.json
+          diff -u /tmp/kopano-gateway-proof/public-evidence-source.sorted.json /tmp/kopano-gateway-proof/public-evidence-parsed.sorted.json
+
           jq -n \
             --arg commit "$GITHUB_SHA" \
             --arg run "$GITHUB_RUN_ID" \
             --slurpfile health /tmp/kopano-gateway-proof/health.json \
             --slurpfile experiments /tmp/kopano-gateway-proof/experiments.json \
-            '{schema:"kopano.gateway.governance-proof.v1",commit:$commit,runId:$run,health:$health[0],experiments:$experiments[0],gate:"ALLOW",truthBoundary:"Hard gate proving the .NET gateway exposes the governed experiment estate. MAIN-BRAIN remains constitutional authority."}' \
+            --slurpfile publicEvidence /tmp/kopano-gateway-proof/public-evidence-runtime.json \
+            '{schema:"kopano.gateway.governance-proof.v2",commit:$commit,runId:$run,health:$health[0],experiments:$experiments[0],publicEvidence:$publicEvidence[0],gate:"ALLOW",truthBoundary:"Hard gate proving the .NET gateway exposes governed experiment state and parses it into a smaller user-facing evidence contract."}' \
             > /tmp/kopano-gateway-proof/governance-receipt.json
 
       - name: External YouTube transport observation
