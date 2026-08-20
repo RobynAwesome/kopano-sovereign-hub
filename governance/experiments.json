@@ -1,6 +1,6 @@
 {
   "schema": "kopano.sovereign.experiment-estate.v1",
-  "snapshotDate": "2026-08-18",
+  "snapshotDate": "2026-08-20",
   "authority": {
     "constitutional": "https://github.com/RobynAwesome/Introduction-to-MCP/tree/master/Schematics/21-KOPANO-PHU%20GOVERNACE%20SYSTEMS/MAIN-BRAIN",
     "runtime": "https://github.com/RobynAwesome/kopano-sovereign-hub",
@@ -221,6 +221,18 @@
       "publicSurface": null,
       "backing": "programme workspace; external outcomes remain receipt-gated",
       "description": "Student entrepreneurship experiment and programme workspace."
+    },
+    {
+      "id": "depth-population",
+      "name": "KPGS Depth Population",
+      "lane": "visual-runtime-orchestration",
+      "relation": "experiment",
+      "lifecycle": null,
+      "state": "POC",
+      "repo": "https://github.com/RobynAwesome/kopano-sovereign-hub",
+      "publicSurface": "https://efafieaxwnzizkrkgdrk.supabase.co/functions/v1/depth-portal",
+      "backing": "Canva-authored visual study with Supabase governed state and Edge runtime; connector orchestration POC, not production infrastructure.",
+      "description": "Bounded depth/population experiment linking Canva visual authoring to Supabase scene state, layer rules and a public read-only Edge runtime."
     }
   ]
 }
