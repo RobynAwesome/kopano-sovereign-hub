@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run validate:experiments && npm run typecheck && vite build",
+    "build": "npm run validate:experiments && npm run validate:receipts && npm run test:receipts && npm run typecheck && vite build",
     "validate:experiments": "node scripts/validate-experiment-registry.mjs",
+    "validate:receipts": "node scripts/validate-external-receipts.mjs",
+    "test:receipts": "node scripts/test-external-receipts.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
