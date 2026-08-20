@@ -1,0 +1,128 @@
+name: Ingest External Economic Receipt
+
+on:
+  workflow_dispatch:
+    inputs:
+      receipt_json:
+        description: 'Minimal provider receipt JSON only. Never paste card data, bank details, secrets, addresses, or raw private receipts.'
+        required: true
+        type: string
+      confirm_external_evidence:
+        description: 'I confirm this metadata comes from a real completed/paid production-provider transaction and the raw evidence is preserved outside GitHub.'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: kpgs-external-receipt-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    if: ${{ github.actor == github.repository_owner && inputs.confirm_external_evidence == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate existing receipt ledgers
+        run: |
+          set -euo pipefail
+          npm run validate:receipts
+          npm run test:receipts
+
+      - name: Ingest bounded external receipt
+        id: ingest
+        env:
+          KPGS_EXTERNAL_RECEIPT_JSON: ${{ inputs.receipt_json }}
+          KPGS_INGESTED_BY: github:${{ github.actor }}
+        run: node scripts/ingest-external-receipt.mjs
+
+      - name: Prove complete APWA after receipt mutation
+        run: npm run build
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+
+      - name: Prove rigid gateway after receipt mutation
+        run: dotnet build gateway/Kopano.Sovereign.Gateway/Kopano.Sovereign.Gateway.csproj --configuration Release
+
+      - name: Commit canonical ledger mutation
+        if: steps.ingest.outputs.changed == 'true'
+        env:
+          LEDGER_PATH: ${{ steps.ingest.outputs.ledger_path }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$LEDGER_PATH"
+          git diff --cached --quiet && { echo 'Expected ledger mutation is absent'; exit 1; }
+          git commit -m "chore(receipts): ingest external receipt ${{ steps.ingest.outputs.kc_receipt_id }}"
+          git push origin HEAD:main
+
+      - name: Bind exact canonical commit
+        id: receipt
+        run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Emit closure receipt
+        env:
+          KC_RECEIPT_ID: ${{ steps.ingest.outputs.kc_receipt_id }}
+          PROVIDER_RECEIPT_ID: ${{ steps.ingest.outputs.provider_receipt_id }}
+          LEDGER_PATH: ${{ steps.ingest.outputs.ledger_path }}
+          ISSUE_NUMBER: ${{ steps.ingest.outputs.issue_number }}
+          OUTCOME: ${{ steps.ingest.outputs.outcome }}
+          COMMIT_SHA: ${{ steps.receipt.outputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/kpgs-external-receipt
+          jq -n \
+            --arg kcReceiptId "$KC_RECEIPT_ID" \
+            --arg providerReceiptId "$PROVIDER_RECEIPT_ID" \
+            --arg ledgerPath "$LEDGER_PATH" \
+            --arg issueNumber "$ISSUE_NUMBER" \
+            --arg commit "$COMMIT_SHA" \
+            --arg outcome "$OUTCOME" \
+            --arg actor "github:${GITHUB_ACTOR}" \
+            '{schema:"kopano.external-receipt-closure.v1",gate:"ALLOW",kcReceiptId:$kcReceiptId,providerReceiptId:$providerReceiptId,ledgerPath:$ledgerPath,issueNumber:($issueNumber|tonumber),commit:$commit,outcome:$outcome,actor:$actor,truthBoundary:"Provider-originated transaction evidence remains external; this receipt proves only validated minimal metadata ingestion, canonical commit binding, and successful Hub build gates."}' \
+            > /tmp/kpgs-external-receipt/closure-receipt.json
+          cat /tmp/kpgs-external-receipt/closure-receipt.json
+
+      - name: Upload closure receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpgs-external-receipt-${{ steps.ingest.outputs.issue_number }}-${{ github.run_id }}
+          path: /tmp/kpgs-external-receipt/closure-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Close satisfied external-world issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.ingest.outputs.issue_number }}
+          KC_RECEIPT_ID: ${{ steps.ingest.outputs.kc_receipt_id }}
+          PROVIDER_RECEIPT_ID: ${{ steps.ingest.outputs.provider_receipt_id }}
+          COMMIT_SHA: ${{ steps.receipt.outputs.commit_sha }}
+          OUTCOME: ${{ steps.ingest.outputs.outcome }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --body "External-world gate satisfied. KC receipt: \`$KC_RECEIPT_ID\`. Provider receipt ID: \`$PROVIDER_RECEIPT_ID\`. Canonical commit: \`$COMMIT_SHA\`. Ingestion outcome: \`$OUTCOME\`. Full APWA + .NET gateway proof passed before closure. Raw financial/private evidence remains outside GitHub."
+          gh issue close "$ISSUE_NUMBER" --reason completed
