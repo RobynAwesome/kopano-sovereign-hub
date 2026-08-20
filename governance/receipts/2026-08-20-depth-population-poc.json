@@ -1,0 +1,66 @@
+{
+  "schema": "kpgs.experiment-receipt.v1",
+  "receipt_id": "depth-population-poc-2026-08-20",
+  "recorded_at": "2026-08-20T06:19:00Z",
+  "experiment_id": "depth-population",
+  "state": "POC",
+  "authority": {
+    "constitutional": "RobynAwesome/Introduction-to-MCP",
+    "runtime_registry": "RobynAwesome/kopano-sovereign-hub",
+    "public_projection_consumer": "RobynAwesome/Kopano-Labs-Website"
+  },
+  "runtime": {
+    "provider": "supabase",
+    "project_name": "KPGS Depth Population",
+    "project_ref": "efafieaxwnzizkrkgdrk",
+    "region": "eu-central-1",
+    "edge_function": "depth-portal",
+    "edge_version": 2,
+    "edge_source_sha256": "0d2580a73c9a9fe3760d2e76272da7227e21b8e71fb6b979fed9b6a89f613c2f",
+    "public_surface": "https://efafieaxwnzizkrkgdrk.supabase.co/functions/v1/depth-portal",
+    "public_state": "https://efafieaxwnzizkrkgdrk.supabase.co/functions/v1/depth-portal?format=json",
+    "access": "public_read_only",
+    "writes_on_visit": false
+  },
+  "visual_authoring": {
+    "provider": "canva",
+    "design_id": "DAHSshUT-n8",
+    "view_url": "https://www.canva.com/d/UYwSEylH8Udg3T-",
+    "role": "editable visual authoring source"
+  },
+  "governed_state": {
+    "tables": [
+      "depth_scenes",
+      "depth_layers",
+      "depth_entities",
+      "population_rules",
+      "scene_events"
+    ],
+    "scene_count": 1,
+    "layer_count": 6,
+    "entity_count": 1,
+    "active_rule_count": 1,
+    "movement_bound_px": 24,
+    "damping": 0.12,
+    "rls_enabled": true,
+    "security_advisor_lints_after_remediation": 0
+  },
+  "connector_lanes": {
+    "canva": "ACTIVE_VISUAL_AUTHORING",
+    "supabase": "ACTIVE_STATE_AND_EDGE_RUNTIME",
+    "github": "ACTIVE_SOURCE_AND_RECEIPT",
+    "mobbin": "BLOCKED_ACCOUNT_ENTITLEMENT",
+    "figma": "CONNECTED_REFERENCE_LANE"
+  },
+  "boundaries": [
+    "This is a connector-orchestration proof of concept, not a production infrastructure claim.",
+    "Mobbin is a UX-reference lane, not a hosting provider.",
+    "The public Edge runtime is GET/OPTIONS only and does not mutate database state on visits.",
+    "DNS promotion remains subject to the estate witness and source-authority gates."
+  ],
+  "proof": {
+    "source_path": "supabase/functions/depth-portal/index.ts",
+    "deployment_status": "ACTIVE",
+    "projection_policy": "PUBLIC_EVIDENCE_ONLY"
+  }
+}
