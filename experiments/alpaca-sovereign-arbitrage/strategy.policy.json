@@ -1,0 +1,39 @@
+{
+  "schema": "kopano.alpaca.sovereign-arbitrage.policy.v1",
+  "competition": {
+    "paper_only": true,
+    "required_starting_equity_usd": 100000,
+    "options_required": true
+  },
+  "universe": ["SPY", "QQQ", "AAPL", "NVDA"],
+  "structures": ["credit_spread", "iron_condor"],
+  "risk": {
+    "max_trade_risk_fraction": 0.03,
+    "max_portfolio_defined_risk_fraction": 0.12,
+    "max_drawdown_fraction": 0.05,
+    "max_legs": 4,
+    "defined_risk_only": true
+  },
+  "entry": {
+    "dte_min": 7,
+    "dte_max": 21,
+    "short_delta_abs_min": 0.15,
+    "short_delta_abs_max": 0.20,
+    "protective_delta_abs_target": 0.05,
+    "iv_to_realized_vol_min": 1.15,
+    "iv_percentile_min": 70,
+    "iv_percentile_min_observations": 20,
+    "max_relative_bid_ask_spread": 0.20,
+    "min_open_interest_per_short_leg": 100
+  },
+  "exit": {
+    "profit_take_fraction_of_max_credit": 0.50,
+    "mandatory_close_dte": 5
+  },
+  "governance": {
+    "decision_states": ["APPROVE", "HOLD", "REJECT"],
+    "llm_can_bypass_risk_engine": false,
+    "execution_requires_approve": true,
+    "truth_rule": "REALITY_STATE > INDEX_STATE"
+  }
+}
