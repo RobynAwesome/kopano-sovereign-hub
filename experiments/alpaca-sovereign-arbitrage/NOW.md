@@ -5,43 +5,47 @@
 - Date: 2026-08-28 SAST
 - Parent issue: `RobynAwesome/kopano-sovereign-hub#35`
 - PR-1 merged: `261553de8b7335e22abbf2806ccaa032d8d59161`
-- PR-2 branch: `hackathon/alpaca-runtime-wiring`
+- PR-2 merged: `9a521a88a6203194b38d2d8fb55ccbe4da66fecc`
+- PR-3 branch: `hackathon/alpaca-competition-execution`
+- Registry state: `BUILD`
 - Constitutional authority remains `RobynAwesome/Introduction-to-MCP` MAIN-BRAIN.
-- Runtime landlord: `RobynAwesome/kopano-sovereign-hub`.
 
-## PROVEN LOCALLY
-
-```text
-OBSERVE -> PROPOSE -> VALIDATE -> APPROVE|HOLD|REJECT -> MCP_INTENT -> RECEIPT
-```
-
-- Strategy/risk kernel is deterministic.
-- Alpaca MCP V2 tool names are bounded.
-- Broker rehydration plan prioritizes account/positions/orders over cached local memory.
-- KC decision receipts are content-hashed and separate from Alpaca provider order receipts.
-- Combined test suite: 20/20 PASS.
-
-## MULTI-LEG TRANSPORT GATE
-
-Current Alpaca MCP Server issue #97 reports that some MCP clients can serialize the multi-leg `legs[]` array as a string. Complex option execution therefore requires a runtime probe:
+## PROVEN IN REPOSITORY
 
 ```text
-MCP_MLEG_UNKNOWN -> HOLD
-MCP_MLEG_FAIL    -> HOLD
-MCP_MLEG_CAPABLE -> eligible for risk-approved paper execution
+OBSERVE
+  -> PROPOSE
+  -> DETERMINISTIC_RISK
+  -> APPROVE|HOLD|REJECT
+  -> ENVIRONMENT_READINESS
+  -> MCP_MLEG_CAPABILITY
+  -> PROVIDER_READY_CALL
+  -> RECEIPT_CONTRACT
 ```
 
-Server schema alone is not proof that the active client bridge preserves the payload.
+- Combined suite: **30/30 PASS**.
+- Paper-only is a hard invariant.
+- Wrong competition start equity is rejected.
+- Level 2 options capability cannot pass a spreads/iron-condor execution gate.
+- Missing option data or credentials produces HOLD.
+- Unknown/failed MCP `legs[]` transport produces HOLD.
+- A provider-ready call is produced only after environment readiness and deterministic risk approval.
+- External receipt promotion requires an actual Alpaca provider order identifier.
 
-## STILL EXTERNAL_GATE
+## EXTERNAL_GATE
 
-- dedicated competition paper account connected;
-- recorded competition start equity exactly $100,000;
-- options permission/data access;
-- successful multi-leg capability round trip through the actual client;
-- accepted/filled paper order;
-- P&L telemetry.
+The repository cannot manufacture these facts:
 
-## NEXT — PR-3
+1. actual competition Alpaca credentials/session;
+2. fresh paper account snapshot;
+3. immutable first-connect start-equity receipt exactly `$100,000`;
+4. Level 3 options capability on the competition account;
+5. options chain/quote/IV/Greeks access;
+6. client-specific MCP multi-leg array round trip;
+7. accepted paper order ID;
+8. post-submit order/position reconciliation;
+9. P&L telemetry.
 
-Connect the actual competition paper environment, run read-only rehydration first, prove the multi-leg bridge, then permit one deterministic risk-approved paper order and capture its external receipt. No live-money lane belongs in this hackathon runtime.
+## NEXT EXECUTION
+
+Follow `governance/PR3_EXTERNAL_GATE.md`. PR-3 remains draft until inspectable external receipts close the first eight gates. P&L then becomes the continuing competition evidence stream, not a prerequisite fabricated at merge time.
