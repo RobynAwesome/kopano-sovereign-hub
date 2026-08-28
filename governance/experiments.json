@@ -1,6 +1,6 @@
 {
   "schema": "kopano.sovereign.experiment-estate.v1",
-  "snapshotDate": "2026-08-20",
+  "snapshotDate": "2026-08-28",
   "authority": {
     "constitutional": "https://github.com/RobynAwesome/Introduction-to-MCP/tree/master/Schematics/21-KOPANO-PHU%20GOVERNACE%20SYSTEMS/MAIN-BRAIN",
     "runtime": "https://github.com/RobynAwesome/kopano-sovereign-hub",
@@ -233,6 +233,18 @@
       "publicSurface": "https://efafieaxwnzizkrkgdrk.supabase.co/functions/v1/depth-portal",
       "backing": "Canva-authored visual study with Supabase governed state and Edge runtime; connector orchestration POC, not production infrastructure.",
       "description": "Bounded depth/population experiment linking Canva visual authoring to Supabase scene state, layer rules and a public read-only Edge runtime."
+    },
+    {
+      "id": "alpaca-sovereign-arbitrage",
+      "name": "Alpaca Sovereign Arbitrage",
+      "lane": "agentic-financial-systems",
+      "relation": "experiment",
+      "lifecycle": null,
+      "state": "BUILD",
+      "repo": "https://github.com/RobynAwesome/kopano-sovereign-hub",
+      "publicSurface": null,
+      "backing": "active Alpaca AI Trading Agents Hackathon build; paper brokerage execution and P&L remain external receipt gates",
+      "description": "Bounded options-trading agent experiment separating LLM proposal from deterministic risk governance, MCP execution intent and external Alpaca paper receipts."
     }
   ]
 }
