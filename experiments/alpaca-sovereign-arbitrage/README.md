@@ -1,6 +1,6 @@
 # Alpaca Sovereign Arbitrage — Hackathon Experiment
 
-**State:** `WORKING`  
+**State:** `BUILD · PR-3 EXTERNAL_GATE`  
 **Competition:** Alpaca AI Trading Agents Hackathon, 28 Aug–4 Sep 2026  
 **Execution target:** dedicated Alpaca competition **paper** account  
 **Issue:** `kopano-sovereign-hub#35`
@@ -14,10 +14,10 @@ REALITY_STATE > INDEX_STATE
 Market observation
   -> LLM thesis/proposal
   -> deterministic risk engine
-  -> RTC execution gate
-  -> Alpaca MCP V2
-  -> paper account
-  -> receipt + P&L telemetry
+  -> competition readiness gate
+  -> MCP multi-leg capability gate
+  -> Alpaca MCP V2 paper execution
+  -> provider receipt + P&L telemetry
 ```
 
 ## Strategy thesis
@@ -31,15 +31,18 @@ The source brief also mixed **IV Rank** with **IV Percentile**. Because Alpaca M
 ## Hard gates
 
 - paper account only;
-- competition starting equity must be exactly `$100,000`;
+- competition starting equity receipt exactly `$100,000`;
+- Alpaca Level 3 options capability for spreads / iron condors;
+- option chain, quote, IV and Greeks data available;
+- MCP client must prove that complex-order `legs[]` survives as an array;
 - options structures only;
 - no naked short option exposure;
 - maximum four legs;
 - maximum loss per structure <= 3% of current equity;
-- aggregate open defined risk <= 12% of current equity (new conservative KPGS local guardrail);
-- reject new risk at >= 5% drawdown from the competition start;
+- aggregate open defined risk <= 12% of current equity;
+- reject new risk at >= 5% drawdown from competition start;
 - liquidity, DTE, delta, and volatility-premium gates must pass;
-- only `APPROVE` may become an execution intent.
+- only `APPROVE` plus `READY` may become a provider-ready execution intent.
 
 ## Canonical Alpaca MCP V2 boundary
 
@@ -47,6 +50,8 @@ The code uses current Alpaca MCP V2 names such as:
 
 - `get_account_info`
 - `get_all_positions`
+- `get_orders`
+- `get_clock`
 - `get_stock_bars`
 - `get_option_chain`
 - `get_option_snapshot`
@@ -60,14 +65,16 @@ Generic V1/hand-wavy names such as `place_order` are intentionally rejected by t
 
 ## PR run
 
-1. **PR-1 — strategy kernel + proof harness**: this tranche.
-2. **PR-2 — KPGS runtime wiring**: experiment registry, MCP adapter, telemetry journal, root validation hook.
-3. **PR-3 — competition paper execution**: secret-backed connection, exact account checks, actual multi-leg paper order and receipts.
+1. **PR-1 — strategy kernel + proof harness:** merged as `261553de8b7335e22abbf2806ccaa032d8d59161`.
+2. **PR-2 — KPGS runtime wiring:** merged as `9a521a88a6203194b38d2d8fb55ccbe4da66fecc`.
+3. **PR-3 — competition paper execution:** draft / external gate until actual Alpaca receipts exist.
 
-No test fixture, README, or simulated candidate is evidence of trading profitability. `PR-3` stays `EXTERNAL_GATE` until the competition account produces real receipts.
+Current local deterministic proof: **30/30 tests passing**.
 
-## Local validation
+No test fixture, README, mocked provider object or simulated candidate is evidence of trading profitability. See `governance/PR3_EXTERNAL_GATE.md` for the exact closure protocol.
+
+## Validation
 
 ```bash
-node --test experiments/alpaca-sovereign-arbitrage/tests/*.test.mjs
+npm run test:alpaca
 ```
