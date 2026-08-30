@@ -2,17 +2,19 @@ import { governAgentProposal } from './agent-cycle.mjs';
 import { buildOptionOrderCall } from './mcp-adapter.mjs';
 import { evaluateCompetitionReadiness } from './competition-gate.mjs';
 import { createDecisionReceipt } from './evidence-journal.mjs';
+import { buildPaperRestOrderCall } from './transport-policy.mjs';
 
 /**
  * Produces a provider-ready paper order call only after both environment readiness
  * and deterministic strategy risk approval. This module does not invoke Alpaca.
  */
-export function prepareCompetitionOrder({ runtime, account, marketReadiness, capabilityProbe, proposalInput }) {
+export function prepareCompetitionOrder({ runtime, account, marketReadiness, capabilityProbe, transportFallback, proposalInput }) {
   const readiness = evaluateCompetitionReadiness({
     runtime,
     account,
     market: marketReadiness,
-    capabilityProbe
+    capabilityProbe,
+    transportFallback
   });
 
   if (readiness.decision !== 'READY') {
@@ -24,7 +26,15 @@ export function prepareCompetitionOrder({ runtime, account, marketReadiness, cap
     return { state: 'RISK_GATE', readiness, evaluation: governed, call: null };
   }
 
-  const order = buildOptionOrderCall({ governedProposal: governed, capabilityProbe });
+  let order;
+  if (readiness.transport?.mode === 'ALPACA_MCP') {
+    order = buildOptionOrderCall({ governedProposal: governed, capabilityProbe });
+  } else if (readiness.transport?.mode === 'ALPACA_PAPER_REST') {
+    order = buildPaperRestOrderCall({ governedProposal: governed, transport: readiness.transport });
+  } else {
+    return { state: 'EXTERNAL_GATE', readiness, evaluation: governed, call: null };
+  }
+
   if (order.decision !== 'APPROVE') {
     return { state: 'EXTERNAL_GATE', readiness, evaluation: governed, call: null };
   }

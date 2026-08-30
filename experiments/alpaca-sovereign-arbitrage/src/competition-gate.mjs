@@ -1,10 +1,11 @@
 import { evaluateMultiLegCapability } from './mcp-adapter.mjs';
+import { selectExecutionTransport } from './transport-policy.mjs';
 
 function reason(severity, code, message) {
   return { severity, code, message };
 }
 
-export function evaluateCompetitionReadiness({ runtime, account, market, capabilityProbe }) {
+export function evaluateCompetitionReadiness({ runtime, account, market, capabilityProbe, transportFallback }) {
   const reasons = [];
 
   if (runtime?.paper_trade !== true) {
@@ -36,8 +37,13 @@ export function evaluateCompetitionReadiness({ runtime, account, market, capabil
   }
 
   const mleg = evaluateMultiLegCapability(capabilityProbe);
-  if (mleg.decision !== 'APPROVE') {
-    reasons.push(reason('HOLD', mleg.code, mleg.message));
+  const transport = selectExecutionTransport({ mcpCapability: mleg, restFallback: transportFallback });
+  if (transport.decision !== 'APPROVE') {
+    reasons.push(reason(
+      transport.decision === 'REJECT' ? 'REJECT' : 'HOLD',
+      transport.code,
+      transport.message
+    ));
   }
 
   const decision = reasons.some((item) => item.severity === 'REJECT')
@@ -49,6 +55,7 @@ export function evaluateCompetitionReadiness({ runtime, account, market, capabil
   return {
     decision,
     reasons,
+    transport,
     gates: {
       paper: runtime?.paper_trade === true,
       credentials: runtime?.credentials_present === true,
@@ -57,7 +64,8 @@ export function evaluateCompetitionReadiness({ runtime, account, market, capabil
       options_level_3: Number(account?.options_trading_level) >= 3,
       account_unblocked: account ? account.trading_blocked !== true && account.account_blocked !== true : false,
       options_data: market?.options_data_available === true,
-      mcp_multi_leg: mleg.decision === 'APPROVE'
+      mcp_multi_leg: mleg.decision === 'APPROVE',
+      execution_transport: transport.decision === 'APPROVE'
     }
   };
 }
