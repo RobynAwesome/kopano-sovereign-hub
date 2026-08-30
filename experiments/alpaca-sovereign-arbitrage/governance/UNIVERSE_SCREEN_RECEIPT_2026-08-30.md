@@ -43,6 +43,35 @@ Friday-close Sep 11 candidates inside the configured `|delta| = 0.15–0.20` ban
 
 Policy limits are <=20% relative bid/ask spread and >=100 open interest per short leg, so both observed short legs pass those local market-data gates.
 
+## AAPL defined-risk reference structure
+
+Protective-leg observations close to the configured `|delta| ~= 0.05` target:
+
+| Contract | Bid / Ask | Delta | Role |
+|---|---:|---:|---|
+| AAPL 295P | 0.38 / 0.49 | -0.0579 | long put wing reference |
+| AAPL 345C | 0.36 / 0.48 | +0.0643 | long call wing reference |
+
+Together with the 305P / 335C short candidates, this forms a symmetrical **10-point-wide** Friday-close iron-condor reference:
+
+```text
+long  295P
+short 305P
+short 335C
+long  345C
+```
+
+Using conservative quote-side arithmetic only:
+
+```text
+put credit  ~= 1.24 - 0.49 = 0.75
+call credit ~= 1.28 - 0.48 = 0.80
+total       ~= 1.55 ($155)
+max loss    ~= (10.00 - 1.55) * 100 = $845
+```
+
+This is a **reference structure, not an order**. The `$845` max-loss figure cannot satisfy the portfolio risk gate until current competition equity and existing open defined risk are obtained from a trading-capable Alpaca session. Fresh Monday quotes may materially change every number above.
+
 ## Why AAPL remains WATCH, not APPROVE
 
 The following remain unresolved or stale:
@@ -52,7 +81,7 @@ The following remain unresolved or stale:
 3. current equity and existing portfolio defined risk are unknown;
 4. immutable competition starting-equity receipt is not available here;
 5. Level 3 options entitlement is not available here;
-6. protective legs and executable net credit must be regenerated from fresh quotes;
+6. the reference structure must be regenerated and repriced from fresh quotes;
 7. execution transport capability must be proven in the actual trading session;
 8. no provider order receipt exists.
 
