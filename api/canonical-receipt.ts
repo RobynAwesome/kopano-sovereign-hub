@@ -1,31 +1,54 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+interface ApiRequest {
+  method?: string;
+  body?: unknown;
+}
 
-// In-memory store for the hackathon POC to pass data to the UI
-let latestCanonicalReceipt: any = null;
+interface ApiResponse {
+  status(code: number): ApiResponse;
+  json(body: unknown): ApiResponse;
+  end(): ApiResponse;
+}
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+type CanonicalReceipt = Record<string, unknown> & {
+  receipt_id: string;
+};
+
+// In-memory continuity remains POC-only; durable receipt storage is a separate backend concern.
+let latestCanonicalReceipt: CanonicalReceipt | null = null;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isCanonicalReceipt(value: unknown): value is CanonicalReceipt {
+  return (
+    isRecord(value) &&
+    typeof value.receipt_id === 'string' &&
+    value.receipt_id.trim().length > 0
+  );
+}
+
+export default function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method === 'POST') {
-    // 1. Receive the canonical receipt from LEFA's SovereignHubBridge
     const receipt = req.body;
-    
-    if (!receipt || !receipt.receipt_id) {
+
+    if (!isCanonicalReceipt(receipt)) {
       return res.status(400).json({ error: 'Invalid GovernanceReceipt payload' });
     }
 
     console.log(`[SOVEREIGN HUB] Received Canonical Receipt: ${receipt.receipt_id}`);
-    console.log(`[SOVEREIGN HUB] Execution Jurisdiction: ${receipt.execution_jurisdiction}`);
-    console.log(`[SOVEREIGN HUB] Proof Depth: ${receipt.proof_depth}`);
 
-    // 2. Persist to active state
+    // POC continuity only. Do not treat this process-local value as durable evidence.
     latestCanonicalReceipt = receipt;
 
-    // 3. (In a real implementation, this would trigger a Pub/Sub event to Vercel clients)
-    
-    return res.status(200).json({ success: true, message: 'Receipt ingested by Sovereign Hub' });
-  } 
-  
+    return res.status(200).json({
+      success: true,
+      message: 'Receipt ingested by Sovereign Hub',
+      persistence: 'process_local',
+    });
+  }
+
   if (req.method === 'GET') {
-    // 1. Allow The Face (Stitch UI) to poll the latest receipt
     if (!latestCanonicalReceipt) {
       return res.status(204).end();
     }
