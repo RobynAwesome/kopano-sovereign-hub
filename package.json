@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run validate:experiments && npm run validate:receipts && npm run test:receipts && npm run test:alpaca && npm run typecheck && vite build",
+    "build": "npm run validate:experiments && npm run validate:receipts && npm run test:receipts && npm run test:alpaca && npm run test:lefa && npm run typecheck && vite build",
     "validate:experiments": "node scripts/validate-experiment-registry.mjs",
     "validate:receipts": "node scripts/validate-external-receipts.mjs",
     "test:receipts": "node scripts/test-external-receipts.mjs",
     "test:alpaca": "node --test experiments/alpaca-sovereign-arbitrage/tests/*.test.mjs",
+    "test:lefa": "node --experimental-strip-types --test tests/lefa-market-observation.test.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
