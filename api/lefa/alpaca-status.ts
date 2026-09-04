@@ -20,6 +20,12 @@ function env(name: string): string {
   return runtime.process?.env?.[name]?.trim() ?? '';
 }
 
+function alpacaSecret(): string {
+  // ALPACA_SECRET_KEY is canonical. ALPACA_API_SECRET remains a bounded compatibility
+  // alias because older LEFA environment examples used that name.
+  return env('ALPACA_SECRET_KEY') || env('ALPACA_API_SECRET');
+}
+
 function corsFor(request: Request) {
   const origin = request.headers.get('origin');
   const configuredOrigin = env('LEFA_ALLOWED_ORIGIN');
@@ -98,11 +104,18 @@ export default {
     }
 
     const apiKey = env('ALPACA_API_KEY');
-    const secretKey = env('ALPACA_SECRET_KEY');
+    const secretKey = alpacaSecret();
 
-    if (!apiKey || !secretKey) {
+    if (!apiKey) {
       return Response.json(
-        statusBody({ bridgeState: 'HOLD', code: 'PAPER_CREDENTIALS_UNAVAILABLE' }),
+        statusBody({ bridgeState: 'HOLD', code: 'PAPER_API_KEY_UNAVAILABLE' }),
+        { status: 503, headers: cors.headers },
+      );
+    }
+
+    if (!secretKey) {
+      return Response.json(
+        statusBody({ bridgeState: 'HOLD', code: 'PAPER_SECRET_KEY_UNAVAILABLE' }),
         { status: 503, headers: cors.headers },
       );
     }
