@@ -26,6 +26,10 @@ function env(name: string): string {
   return runtime.process?.env?.[name]?.trim() ?? '';
 }
 
+function alpacaSecret(): string {
+  return env('ALPACA_SECRET_KEY') || env('ALPACA_API_SECRET');
+}
+
 function corsFor(request: Request) {
   const origin = request.headers.get('origin');
   const configuredOrigin = env('LEFA_ALLOWED_ORIGIN');
@@ -70,10 +74,17 @@ export default {
     }
 
     const apiKey = env('ALPACA_API_KEY');
-    const secretKey = env('ALPACA_SECRET_KEY');
+    const secretKey = alpacaSecret();
 
-    if (!apiKey || !secretKey) {
-      return Response.json(marketHold(symbol, 'PAPER_CREDENTIALS_UNAVAILABLE'), {
+    if (!apiKey) {
+      return Response.json(marketHold(symbol, 'PAPER_API_KEY_UNAVAILABLE'), {
+        status: 503,
+        headers: cors.headers,
+      });
+    }
+
+    if (!secretKey) {
+      return Response.json(marketHold(symbol, 'PAPER_SECRET_KEY_UNAVAILABLE'), {
         status: 503,
         headers: cors.headers,
       });
