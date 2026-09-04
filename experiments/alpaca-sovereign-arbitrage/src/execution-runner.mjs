@@ -61,3 +61,37 @@ export function receiptAfterProviderResult({ timestamp, cycleId, observation, pr
     providerResult
   });
 }
+
+/**
+ * Executes a risk-approved competition order directly against the Alpaca Paper Trading API.
+ * Bridges READY_TO_SUBMIT -> ALPACA PAPER ORDER -> provider receipt.
+ */
+export async function executeCompetitionOrder({ preparedOrder, apiKey, secretKey, baseUrl = 'https://paper-api.alpaca.markets' }) {
+  if (preparedOrder?.state !== 'READY_TO_SUBMIT' || !preparedOrder?.call) {
+    throw new Error(`Cannot execute order in state: ${preparedOrder?.state}`);
+  }
+  if (!apiKey || !secretKey) {
+    throw new Error('Alpaca paper API credentials are required for execution');
+  }
+
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/v2/orders`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'APCA-API-KEY-ID': apiKey,
+      'APCA-API-SECRET-KEY': secretKey,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(preparedOrder.call.args)
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Alpaca paper execution error (${response.status}): ${errorBody}`);
+  }
+
+  const providerResult = await response.json();
+  return providerResult;
+}
+
