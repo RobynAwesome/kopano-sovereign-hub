@@ -3,7 +3,7 @@ import {
   marketHold,
   normalizePrimarySymbol,
   projectMarketObservation,
-} from '../../src/lefa-market-observation';
+} from '../../src/lefa-market-observation.js';
 
 const ALPACA_MARKET_BASE = 'https://data.alpaca.markets/v2/stocks';
 const ALPACA_PAPER_CLOCK_ENDPOINT = 'https://paper-api.alpaca.markets/v2/clock';
